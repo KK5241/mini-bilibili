@@ -1,25 +1,27 @@
 <template>
   <button @click="open">登陆</button>
   <!-- <el-button plain @click="open">Click to open the Message Box</el-button> -->
+  <div>
+    <div></div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ElMessage, ElMessageBox } from "element-plus";
-import type { Action } from "element-plus";
-
+import { ElMessage, ElMessageBox } from 'element-plus'
+import type { Action } from 'element-plus'
 const open = () => {
-  ElMessageBox.alert("This is a message", "", {
+  ElMessageBox.alert('This is a message', '', {
     // if you want to disable its autofocus
     // autofocus: false,
-    confirmButtonText: "OK",
+    confirmButtonText: 'OK',
     callback: (action: Action) => {
       ElMessage({
-        type: "info",
+        type: 'info',
         message: `action: ${action}`,
-      });
+      })
     },
-  });
-};
+  })
+}
 </script>
 
 <style lang="scss" scoped></style>

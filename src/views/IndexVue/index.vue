@@ -4,5 +4,5 @@
 </template>
 
 <script setup lang="ts">
-import Login from "../login/index.vue";
+import Login from '../login/index.vue'
 </script>
