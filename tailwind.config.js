@@ -5,7 +5,15 @@ export default {
     "./src/**/*.{vue,js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    // 配置自定义样式
+    extend: {
+      container: {
+        center: true,
+        padding: {
+          DEFAULT: '165px'
+        },
+      },
+    },
   },
   plugins: [],
 }
