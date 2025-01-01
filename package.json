@@ -19,6 +19,7 @@
     "@types/vue": "^1.0.31",
     "@vitejs/plugin-vue": "^5.1.4",
     "@vue/runtime-dom": "^3.5.13",
+    "@vue/tsconfig": "^0.7.0",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",
     "prettier": "3.4.2",

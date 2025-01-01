@@ -10,7 +10,11 @@ export default {
       container: {
         center: true,
         padding: {
-          DEFAULT: '165px'
+          DEFAULT: '165px',
+          sm: '10px',
+          lg: '165px', 
+          xl: '165px',
+          '2xl': '165px',
         },
       },
     },
