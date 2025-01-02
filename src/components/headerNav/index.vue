@@ -1,5 +1,5 @@
 <template>
-  <router-link to="/course">课程</router-link>
+  <router-link to="/">课程</router-link>
   <router-link to="/school">学校</router-link>
   <router-link to="/textbook">数字教材</router-link>
   <router-link to="/school-cloud">学校云</router-link>
