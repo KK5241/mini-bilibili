@@ -64,12 +64,21 @@
         </svg>
       </div>
     </div>
-    <div class="ml-auto hover:text-[#2976d3] cursor-pointer">登陆 | 注册</div>
+    <div class="ml-auto hover:text-[#2976d3] cursor-pointer" @click="handleLogin">登录 | 注册</div>
   </div>
+  <LoginModal ref="loginModalRef" />
 </template>
 
 <script setup lang="ts">
 import HeaderNav from '@/components/headerNav/index.vue'
+import LoginModal from '@/components/LoginModal.vue'
+import { ref } from 'vue'
+
+const loginModalRef = ref()
+
+const handleLogin = () => {
+  loginModalRef.value.open()
+}
 </script>
 
 <style scoped></style>
