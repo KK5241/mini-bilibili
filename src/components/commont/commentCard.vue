@@ -44,6 +44,11 @@
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue'
 
+console.log(123);
+console.log(5678);
+
+
+
 // 定义接收的属性
 const props = defineProps({
   comment: {
