@@ -47,6 +47,8 @@ import { defineProps, defineEmits } from 'vue'
 console.log(123);
 console.log(5678);
 
+console.log(999);
+console.log(888);
 
 
 // 定义接收的属性
