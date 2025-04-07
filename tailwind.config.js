@@ -13,8 +13,6 @@ export default {
           DEFAULT: '165px',
           sm: '10px',
           lg: '165px', 
-          xl: '165px',
-          '2xl': '165px',
         },
       },
     },

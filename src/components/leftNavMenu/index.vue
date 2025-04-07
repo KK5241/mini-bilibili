@@ -2,36 +2,25 @@
   <div class="left-nav-menu">
     <div class="menu-title">国家精品</div>
     <div class="menu-item hot-item">
-      <span class="hot-icon">🔥</span> 考研
+      <span class="hot-icon">🔥 考研</span>
       <span class="sub-menu">数学 / 英语 / 政治 / 专业课</span>
     </div>
-    <div class="menu-item">
-      <span>认证学习</span>
-      <span class="sub-menu">理学 / 工学 / 经济学</span>
-    </div>
     <div class="menu-item hot-item">
-      <span class="hot-icon">🔥</span> 期末突击
+      <span class="hot-icon">🔥 期末突击</span>
       <span class="sub-menu">数学 / 物理 / 计算机</span>
     </div>
+    
     <div class="menu-item">
-      <span>计算机</span>
+      <span >计算机</span>
       <span class="sub-menu">大数据与人工智能 / 编程</span>
     </div>
     <div class="menu-item">
-      <span>理学工学农学</span>
-      <span class="sub-menu">数学 / 物理 / 生物</span>
-    </div>
-    <div class="menu-item">
-      <span>外语</span>
+      <span > 外语</span>
       <span class="sub-menu">听力/口语 / 写作/翻译</span>
     </div>
     <div class="menu-item">
-      <span>保研及论文</span>
-      <span class="sub-menu">小白课程 / 论文指导</span>
-    </div>
-    <div class="menu-item">
-      <span>专升本</span>
-      <span class="sub-menu">河南 / 广东 / 浙江 / 专业课</span>
+      <span>生活相关</span>
+      <span class="sub-menu">菜谱 / 音乐 / 阅读</span>
     </div>
   </div>
 </template>
@@ -83,4 +72,4 @@
   color: #888;
   margin-top: 2px;
 }
-</style> 
+</style>

@@ -9,6 +9,10 @@ const routes = [
     path: '/school',
     component: () => import('@/views/school/index.vue'),
   },
+  {
+    path: '/video',
+    component: () => import('@/views/video/index.vue'),
+  },
 ]
 
 const router = createRouter({

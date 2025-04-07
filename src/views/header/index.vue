@@ -64,7 +64,41 @@
         </svg>
       </div>
     </div>
-    <div class="ml-auto hover:text-[#2976d3] cursor-pointer" @click="handleLogin">登录 | 注册</div>
+    <div
+      class="ml-auto flex items-center gap-3"
+    >
+      <!-- 未登录状态显示登录/注册按钮 -->
+      <template v-if="!userStore.isLoggedIn">
+        <el-button 
+          type="primary" 
+          plain 
+          @click="showLoginModal"
+        >登录 | 注册</el-button>
+      </template>
+      
+      <!-- 登录后状态显示用户信息 -->
+      <template v-else>
+        <el-dropdown trigger="click" @command="handleCommand">
+          <div class="flex items-center cursor-pointer">
+            <img 
+              :src="userStore.user?.avatar || '/src/assets/avatar-default.png'" 
+              class="w-8 h-8 rounded-full mr-2" 
+              alt="头像"
+            />
+            <span class="text-sm">{{ userStore.username }}</span>
+            <el-icon class="ml-1"><arrow-down /></el-icon>
+          </div>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="profile">个人中心</el-dropdown-item>
+              <el-dropdown-item command="favorites">我的收藏</el-dropdown-item>
+              <el-dropdown-item command="history">观看历史</el-dropdown-item>
+              <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </template>
+    </div>
   </div>
   <LoginModal ref="loginModalRef" />
 </template>
@@ -73,11 +107,35 @@
 import HeaderNav from '@/components/headerNav/index.vue'
 import LoginModal from '@/components/LoginModal.vue'
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ArrowDown } from '@element-plus/icons-vue'
+import { useUserStore } from '../../store/user'
 
+const router = useRouter()
+const userStore = useUserStore()
 const loginModalRef = ref()
 
-const handleLogin = () => {
+// 打开登录模态框
+const showLoginModal = () => {
   loginModalRef.value.open()
+}
+
+// 处理下拉菜单命令
+const handleCommand = (command: string) => {
+  switch (command) {
+    case 'profile':
+      router.push(`/user/${userStore.userId}`)
+      break
+    case 'favorites':
+      router.push('/favorites')
+      break
+    case 'history':
+      router.push('/history')
+      break
+    case 'logout':
+      userStore.logout()
+      break
+  }
 }
 </script>
 

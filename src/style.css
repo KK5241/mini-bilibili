@@ -12,3 +12,15 @@
         box-sizing: border-box;
     }
 }
+
+.grid {
+  display: grid;
+}
+
+.grid-cols-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.gap-4 {
+  gap: 16px;
+}
