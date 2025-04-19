@@ -42,7 +42,7 @@
           class="rounded-full bg-gray-100 w-16 h-16 mb-4 flex justify-center items-center"
         >
           <img
-            :src="userStore.user?.avatar || '@/assets/avatar-default.png'"
+            :src="userStore.user?.avatar || defaultAvatar"
             alt=""
             class="w-12 h-12 rounded-full"
           />
@@ -95,7 +95,7 @@ import VideoContent from '@/components/content/videoContent.vue'
 import LoginModal from '@/components/LoginModal.vue'
 import { ref } from 'vue'
 import { useUserStore } from '@/store/user'
-
+import defaultAvatar from '@/assets/avatar-default.png'
 const userStore = useUserStore()
 const loginModalRef = ref()
 </script>

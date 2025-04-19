@@ -15,18 +15,20 @@
               <span>{{ formatDate(videoDetail.createdAt) }}</span>
             </div>
             <div class="flex items-center">
-              <button class="flex items-center mr-4" @click="likeVideo">
-                <i
-                  class="fas fa-thumbs-up mr-1"
-                  :class="{ 'text-blue-500': isLiked }"
-                ></i>
+              <button
+                class="flex items-center mr-4"
+                @click="likeVideo"
+                :class="{ 'text-blue-500': isLiked }"
+              >
+                <i class="fas fa-thumbs-up mr-1"></i>
                 <span>{{ videoDetail.likes }}</span>
               </button>
-              <button class="flex items-center mr-4" @click="favoriteVideo">
-                <i
-                  class="fas fa-star mr-1"
-                  :class="{ 'text-blue-500': isCollected }"
-                ></i>
+              <button
+                class="flex items-center mr-4"
+                @click="favoriteVideo"
+                :class="{ 'text-blue-500': isCollected }"
+              >
+                <i class="fas fa-star mr-1"></i>
                 <span>{{ videoDetail.favorites }}</span>
               </button>
               <button class="flex items-center" @click="shareVideo">
@@ -82,17 +84,50 @@
 
         <!-- 评论区域 -->
         <div class="bg-white p-4 rounded-lg">
-          <div class="flex items-center justify-between mb-4">
-            <h2 class="font-bold">{{ comments.length }}条评论</h2>
-            <el-select
-              v-model="commentSort"
-              placeholder="排序方式"
-              size="small"
-              @change="sortComments"
-            >
-              <el-option label="最新" value="latest"></el-option>
-              <el-option label="最热" value="hottest"></el-option>
-            </el-select>
+          <div class="bg-white p-6 pl-0 pr-0 rounded-xl shadow-sm">
+            <!-- 顶部标题 + 数量 + 排序 -->
+            <div class="flex items-center justify-between mb-4">
+              <!-- 评论标题与数量 -->
+              <div class="flex items-center space-x-2">
+                <h1 class="text-xl font-semibold text-gray-800">评论</h1>
+                <span class="text-sm text-gray-500"
+                  >({{ comments.length }})</span
+                >
+              </div>
+
+              <!-- 排序方式 -->
+              <div class="flex items-center space-x-3 text-sm text-gray-600">
+                <button
+                  class="hover:text-blue-500"
+                  :class="{
+                    'text-blue-600 font-bold': commentSort === 'latest',
+                  }"
+                  @click="
+                    () => {
+                      commentSort = 'latest'
+                      sortComments()
+                    }
+                  "
+                >
+                  最新
+                </button>
+                <span>|</span>
+                <button
+                  class="hover:text-blue-500"
+                  :class="{
+                    'text-blue-600 font-bold': commentSort === 'hottest',
+                  }"
+                  @click="
+                    () => {
+                      commentSort = 'hottest'
+                      sortComments()
+                    }
+                  "
+                >
+                  最热
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- 评论输入 -->
@@ -271,6 +306,13 @@ const videoDetail = ref({
 // 是否已关注作者
 const isFollowed = ref(false)
 
+// 用户交互状态
+const userInteraction = ref({
+  liked: false,
+  favorited: false,
+  shared: false,
+})
+
 // 评论相关
 const commentText = ref('')
 const commentSort = ref('latest')
@@ -321,6 +363,22 @@ const loadVideoDetail = async () => {
 
     // 增加浏览量
     await videoApi.addView(videoId.value)
+
+    // 检查用户交互状态
+    if (userStore.isLoggedIn) {
+      try {
+        const interaction: any = await videoApi.getVideoInteraction(
+          videoId.value,
+        )
+        console.log(interaction)
+
+        userInteraction.value = interaction
+        isLiked.value = interaction.liked
+        isCollected.value = interaction.favorited
+      } catch (error) {
+        console.error('获取视频交互状态失败:', error)
+      }
+    }
 
     // 检查是否已关注视频作者
     if (userStore.isLoggedIn && videoDetail.value.userId !== userStore.userId) {
@@ -441,12 +499,13 @@ const likeVideo = async () => {
   }
 
   try {
-    await videoApi.likeVideo(videoId.value)
-    videoDetail.value.likes += 1
-    ElMessage.success('点赞成功')
+    const response = await videoApi.likeVideo(videoId.value)
+    videoDetail.value.likes = response.likes
+    isLiked.value = isLiked.value === false ? true : false
+    ElMessage.success(isLiked.value ? '点赞成功' : '已取消点赞')
   } catch (error) {
-    console.error('点赞失败:', error)
-    ElMessage.error('点赞失败，请稍后再试')
+    console.error('操作失败:', error)
+    ElMessage.error('操作失败，请稍后再试')
   }
 }
 
@@ -458,20 +517,21 @@ const favoriteVideo = async () => {
   }
 
   try {
-    await videoApi.favoriteVideo(videoId.value)
-    videoDetail.value.favorites += 1
-    ElMessage.success('收藏成功')
+    const response = await videoApi.favoriteVideo(videoId.value)
+    videoDetail.value.favorites = response.favorites
+    isCollected.value = !isCollected.value
+    ElMessage.success(isCollected.value ? '收藏成功' : '已取消收藏')
   } catch (error) {
-    console.error('收藏失败:', error)
-    ElMessage.error('收藏失败，请稍后再试')
+    console.error('操作失败:', error)
+    ElMessage.error('操作失败，请稍后再试')
   }
 }
 
 // 分享视频
 const shareVideo = async () => {
   try {
-    await videoApi.shareVideo(videoId.value)
-    videoDetail.value.shares += 1
+    const response = await videoApi.shareVideo(videoId.value)
+    videoDetail.value.shares = response.shares
 
     // 复制链接到剪贴板
     const url = window.location.href

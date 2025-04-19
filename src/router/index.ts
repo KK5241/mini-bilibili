@@ -13,6 +13,23 @@ const routes = [
     path: '/video',
     component: () => import('@/views/video/index.vue'),
   },
+  {
+    path: '/search',
+    component: () => import('@/views/search/index.vue'),
+  },
+  {
+    path: '/profile',
+    component: () => import('@/views/profile/index.vue'),
+  },
+  {
+    path: '/profile/:id',
+    component: () => import('@/views/profile/index.vue'),
+  },
+  {
+    path: '/favorites',
+    component: () => import('@/views/profile/index.vue'),
+    props: { defaultTab: 'favorites' },
+  },
 ]
 
 const router = createRouter({

@@ -60,6 +60,11 @@ export const useUserStore = defineStore('user', {
       localStorage.setItem('user', JSON.stringify(data.user));
     },
     
+    updateUserInfo(userData: any) {
+      this.user = { ...this.user, ...userData };
+      localStorage.setItem('user', JSON.stringify(this.user));
+    },
+    
     logout() {
       this.user = null;
       this.token = '';

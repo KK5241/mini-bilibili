@@ -55,9 +55,14 @@ export const userApi = {
     return api.get(`/users/${userId}`)
   },
 
+  // 获取用户详细资料（含关注数、粉丝数等）
+  getUserProfile(userId: number) {
+    return api.get(`/users/${userId}/profile`)
+  },
+
   // 更新用户信息
-  updateUserInfo(userId: number, data: any) {
-    return api.put(`/users/${userId}`, data)
+  updateProfile(data: any) {
+    return api.put(`/users/profile`, data)
   },
 
   // 关注用户
@@ -70,9 +75,29 @@ export const userApi = {
     return api.post(`/users/unfollow/${followId}`)
   },
 
-  // 检查是否关注
+  // 获取关注列表
   getFollowing(userId: number) {
     return api.get(`/users/${userId}/following`)
+  },
+
+  // 获取粉丝列表
+  getFollowers(userId: number) {
+    return api.get(`/users/${userId}/followers`)
+  },
+
+  // 获取用户发布的视频
+  getUserVideos(userId: number) {
+    return api.get(`/users/${userId}/videos`)
+  },
+
+  // 获取用户收藏的视频
+  getUserFavorites(userId: number) {
+    return api.get(`/users/${userId}/favorites`)
+  },
+
+  // 获取用户观看历史
+  getViewHistory(userId: number) {
+    return api.get(`/users/${userId}/history`)
   },
 }
 
@@ -93,9 +118,22 @@ export const videoApi = {
     return api.get('/videos/recent')
   },
 
+  // 获取热搜词
+  getHotSearches() {
+    return api.get('/videos/hot-searches')
+  },
+
+  // 获取搜索建议
+  getSearchSuggestions(query: string) {
+    return api.get(`/videos/search-suggestions?q=${query}`)
+  },
+
   // 搜索视频
-  searchVideos(query: string) {
-    return api.get(`/videos/search?q=${query}`)
+  searchVideos(query: string, sort?: string, limit?: number) {
+    let url = `/videos/search?q=${encodeURIComponent(query)}`
+    if (sort) url += `&sort=${encodeURIComponent(sort)}`
+    if (limit && !isNaN(Number(limit))) url += `&limit=${limit}`
+    return api.get(url)
   },
 
   // 获取视频详情
@@ -121,6 +159,11 @@ export const videoApi = {
   // 分享视频
   shareVideo(id: number) {
     return api.post(`/videos/${id}/share`)
+  },
+
+  // 获取用户与视频的互动状态（点赞、收藏、分享）
+  getVideoInteraction(id: number) {
+    return api.get(`/videos/${id}/interaction`)
   },
 }
 
