@@ -55,8 +55,9 @@
                 <div class="flex items-center mr-4">
                   <img
                     :src="video.user?.avatar || '/src/assets/avatar-default.png'"
-                    class="w-5 h-5 rounded-full mr-1"
+                    class="w-5 h-5 rounded-full mr-1 cursor-pointer"
                     alt="用户头像"
+                    @click.stop="goToChat(video.user?.id)"
                   />
                   <span>{{ video.user?.username }}</span>
                 </div>
@@ -76,6 +77,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { videoApi } from '../../services/api'
 import { ElMessage } from 'element-plus'
+import { useUserStore } from '../../store/user'
 
 // 定义视频类型接口
 interface VideoUser {
@@ -106,6 +108,7 @@ const searchQuery = ref('')
 const searchResults = ref<Video[]>([])
 const isLoading = ref(true)
 const sortBy = ref('')
+const userStore = useUserStore()
 
 // 搜索视频
 const searchVideos = async () => {
@@ -171,6 +174,20 @@ const formatDate = (dateString: string) => {
     return `${year}-${month}-${day}`
   }
 }
+
+// 添加跳转到聊天页面的方法
+const goToChat = (userId: number | undefined) => {
+  // 如果未登录或点击的是自己的头像，则不跳转
+  if (!userId || !userStore.isLoggedIn || userId === userStore.userId) {
+    return;
+  }
+  
+  // 阻止事件冒泡，避免触发视频点击事件
+  event?.stopPropagation();
+  
+  // 跳转到聊天页面
+  router.push(`/chat/${userId}`);
+};
 </script>
 
 <style scoped>

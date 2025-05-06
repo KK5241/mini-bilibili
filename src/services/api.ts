@@ -1,5 +1,8 @@
 import axios from 'axios'
 
+// 假设API_BASE_URL已经在文件顶部定义，如果没有，添加此定义
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+
 // 创建axios实例
 const api = axios.create({
   baseURL: 'http://localhost:3000',
@@ -26,16 +29,39 @@ api.interceptors.request.use(
 // 响应拦截器 - 处理错误
 api.interceptors.response.use(
   (response) => {
-    return response.data
+    // 直接返回响应数据
+    return response.data;
   },
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // 未授权，清除token并跳转到登录页
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+    if (error.response) {
+      // 服务器返回了错误状态码
+      if (error.response.status === 401) {
+        // 未授权，清除token并跳转到登录页
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        // 如果在非登录页面，可以考虑跳转到登录页
+        if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+          window.location.href = '/';
+        }
+      } else if (error.response.status === 403) {
+        // 权限不足
+        console.error('权限不足');
+      } else if (error.response.status === 404) {
+        // 资源不存在
+        console.error('请求的资源不存在');
+      } else if (error.response.status === 500) {
+        // 服务器内部错误
+        console.error('服务器内部错误');
+      }
+    } else if (error.request) {
+      // 请求已发送但未收到响应
+      console.error('无法连接到服务器，请检查网络连接');
+    } else {
+      // 请求设置有误
+      console.error('请求配置错误:', error.message);
     }
-    return Promise.reject(error)
-  },
+    return Promise.reject(error);
+  }
 )
 
 // 用户相关API
@@ -61,8 +87,13 @@ export const userApi = {
   },
 
   // 更新用户信息
-  updateProfile(data: any) {
-    return api.put(`/users/profile`, data)
+  updateProfile(data: any, id: number) {
+    return api.put(`/users/${id}/profile`, data)
+  },
+
+  // 更新密码
+  updatePassword(currentPassword: string, newPassword: string) {
+    return api.put(`/users/password`, { currentPassword, newPassword })
   },
 
   // 关注用户
@@ -165,6 +196,41 @@ export const videoApi = {
   getVideoInteraction(id: number) {
     return api.get(`/videos/${id}/interaction`)
   },
+  
+  // 创建视频
+  createVideo(videoData: {
+    title: string;
+    description?: string;
+    cover: string;
+    videoUrl: string;
+    duration?: string;
+    isPremium?: boolean;
+    hasWisdomCourse?: boolean;
+    teacher?: string;
+  }) {
+    console.log(videoData);
+    
+    return api.post('/videos', videoData)
+  },
+  
+  // 更新视频信息
+  updateVideo(id: number, videoData: {
+    title?: string;
+    description?: string;
+    cover?: string;
+    videoUrl?: string;
+    duration?: string;
+    isPremium?: boolean;
+    hasWisdomCourse?: boolean;
+    teacher?: string;
+  }) {
+    return api.put(`/videos/${id}`, videoData)
+  },
+  
+  // 删除视频
+  deleteVideo(id: number) {
+    return api.delete(`/videos/${id}`)
+  }
 }
 
 // 评论相关API
@@ -193,5 +259,138 @@ export const commentApi = {
     return api.post(`/comments/${commentId}/like`)
   },
 }
+
+// 上传封面图片API
+export const uploadApi = {
+  // 上传封面图片
+  uploadCover: async (file: File, token: string): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/uploads/cover`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('上传封面失败');
+      }
+
+      const data = await response.json();
+      return data.url; // 返回图片的存储路径
+    } catch (error) {
+      console.error('上传封面失败:', error);
+      throw error;
+    }
+  },
+
+  // 上传头像
+  uploadAvatar: async (file: File, token: string): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/uploads/avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('上传头像失败');
+      }
+
+      const data = await response.json();
+      return data.url; // 返回图片的存储路径
+    } catch (error) {
+      console.error('上传头像失败:', error);
+      throw error;
+    }
+  },
+
+  // 上传视频文件
+  uploadVideo: async (file: File, token: string, onProgress?: (percent: number) => void): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      // 使用XMLHttpRequest来支持上传进度
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        
+        // 监听上传进度
+        if (onProgress) {
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percent = Math.round((event.loaded / event.total) * 100);
+              onProgress(percent);
+            }
+          };
+        }
+
+        xhr.open('POST', `${API_BASE_URL}/uploads/video`, true);
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const data = JSON.parse(xhr.responseText);
+            resolve(data.path);
+          } else {
+            reject(new Error('上传视频失败'));
+          }
+        };
+        
+        xhr.onerror = () => {
+          reject(new Error('网络错误'));
+        };
+        
+        xhr.send(formData);
+      });
+    } catch (error) {
+      console.error('上传视频失败:', error);
+      throw error;
+    }
+  }
+};
+
+export const chatApi = {
+  // 获取会话列表
+  getConversations: async () => {
+    const response = await api.get('/chat/conversations');
+    return response;
+  },
+
+  // 获取与指定用户的聊天历史
+  getMessageHistory: async (userId: number, page = 1, limit = 20) => {
+    const response = await api.get(`/chat/messages/${userId}`, {
+      params: { page, limit }
+    });
+    return response;
+  },
+
+  // 发送消息
+  sendMessage: async (receiverId: number, content: string) => {
+    const response = await api.post('/chat/messages', { receiverId, content });
+    return response;
+  },
+
+  // 获取未读消息数量
+  getUnreadCount: async () => {
+    const response = await api.get('/chat/unread-count');
+    return response;
+  },
+  
+  // 获取用户资料
+  getUserProfile: async (userId: number) => {
+    const response = await api.get(`/users/${userId}/profile`);
+    return response;
+  }
+};
 
 export default api

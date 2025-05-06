@@ -44,7 +44,7 @@
           <div class="aspect-video">
             <video
               ref="videoPlayer"
-              src="https://prod-streaming-video-msn-com.akamaized.net/a8c412fa-f696-4ff2-9c76-e8ed9cdffe0f/604a87fc-e7bc-463e-8d56-cde7e661d690.mp4"
+              :src="videoDetail.videoUrl"
               class="w-full h-full"
               controls
               :poster="videoDetail.cover"
@@ -133,10 +133,7 @@
           <!-- 评论输入 -->
           <div class="flex mb-6">
             <img
-              :src="
-                userStore.user?.avatar ||
-                'https://picsum.photos/100/100?random=user'
-              "
+              :src="user?.avatar ? getCompleteFileUrl(user.avatar) : '/src/assets/avatar-default.png'"
               alt="用户头像"
               class="w-10 h-10 rounded-full mr-3"
             />
@@ -194,11 +191,12 @@
           <div class="flex items-center mb-4">
             <img
               :src="
-                videoDetail.user?.avatar ||
-                'https://picsum.photos/100/100?random=uploader'
+                videoDetail.user?.avatar ? getCompleteFileUrl(videoDetail.user.avatar) :
+                '/src/assets/avatar-default.png'
               "
               alt="UP主头像"
-              class="w-12 h-12 rounded-full mr-3"
+              class="w-12 h-12 rounded-full mr-3 cursor-pointer"
+              @click="goToChatWithAuthor"
             />
             <div class="flex-1">
               <div class="font-bold">{{ videoDetail.user?.username }}</div>
@@ -271,9 +269,38 @@ import { videoApi, commentApi, userApi } from '../../services/api'
 import { useUserStore } from '../../store/user'
 import { ElMessage } from 'element-plus'
 import commentCard from '@/components/commont/commentCard.vue'
+
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+
+// 获取完整的文件URL
+const getCompleteFileUrl = (filePath: string): string => {
+  // 如果是空值则返回空字符串
+  if (!filePath) {
+    return '';
+  }
+  
+  // 如果已经是完整URL，则直接返回
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+    return filePath;
+  }
+  
+  // 获取环境变量中的服务器地址，默认为本地开发环境
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+  
+  // 如果以uploads开头，意味着是上传路径
+  if (filePath.startsWith('/uploads/') || filePath.startsWith('uploads/')) {
+    // 规范化路径
+    const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+    return `${API_BASE_URL}${normalizedPath}`;
+  }
+  
+  // 其他情况，确保添加uploads前缀
+  const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+  return `${API_BASE_URL}/uploads${normalizedPath}`;
+};
+
 const videoId = computed(() => Number(route.query.id))
 const isLiked = ref(false)
 const isCollected = ref(false)
@@ -281,7 +308,7 @@ const isCollected = ref(false)
 const isLoading = ref(true)
 const isLoadingComments = ref(true)
 const isLoadingRecommended = ref(true)
-
+const user = ref(userStore.user)
 // 视频播放器引用
 const videoPlayer = ref(null)
 
@@ -361,8 +388,10 @@ const loadVideoDetail = async () => {
     const response = await videoApi.getVideoDetail(videoId.value)
     videoDetail.value = response
 
-    // 增加浏览量
-    await videoApi.addView(videoId.value)
+    if (userStore.isLoggedIn) {
+      // 增加浏览量
+      await videoApi.addView(videoId.value)
+    }
 
     // 检查用户交互状态
     if (userStore.isLoggedIn) {
@@ -413,6 +442,8 @@ const loadComments = async () => {
 // 加载推荐视频
 const loadRecommendedVideos = async () => {
   try {
+    console.log('xxx');
+    
     isLoadingRecommended.value = true
     const response = await videoApi.getPopularVideos()
     console.log(response)
@@ -529,6 +560,11 @@ const favoriteVideo = async () => {
 
 // 分享视频
 const shareVideo = async () => {
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录')
+    return
+  }
+
   try {
     const response = await videoApi.shareVideo(videoId.value)
     videoDetail.value.shares = response.shares
@@ -598,12 +634,12 @@ const followAuthor = async () => {
 }
 
 // 跳转到其他视频
-const goToVideo = (id) => {
+const goToVideo = async (id) => {
   router.push(`/video?id=${id}`)
   // 刷新页面数据
   videoId.value = id
-  loadVideoDetail()
-  loadComments()
+  await loadVideoDetail()
+  await loadComments()
 }
 
 // 弹幕相关函数
@@ -665,7 +701,22 @@ const stopDanmu = () => {
   }
 }
 
-onMounted(() => {
+// 添加前往与UP主聊天的方法
+const goToChatWithAuthor = () => {
+  // 未登录或是自己的视频时不跳转
+  if (!userStore.isLoggedIn || userStore.userId === videoDetail.value.userId) {
+    return;
+  }
+  
+  // 跳转到与UP主的聊天页面
+  router.push(`/chat/${videoDetail.value.userId}`);
+};
+
+onMounted(async () => {
+  console.log('xxx');
+  if(userStore.user?.id){
+    user.value = await userApi.getUserInfo(userStore.user.id)
+  }
   if (videoId.value) {
     console.log(videoId.value)
     loadVideoDetail()

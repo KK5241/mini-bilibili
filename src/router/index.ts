@@ -30,6 +30,24 @@ const routes = [
     component: () => import('@/views/profile/index.vue'),
     props: { defaultTab: 'favorites' },
   },
+  {
+    path: '/upload',
+    component: () => import('@/views/upload/index.vue'),
+  },
+  {
+    path: '/chat',
+    component: () => import('../views/chat/index.vue'),
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/chat/:userId',
+    component: () => import('../views/chat/ChatRoom.vue'),
+    meta: {
+      requiresAuth: true
+    }
+  },
 ]
 
 const router = createRouter({

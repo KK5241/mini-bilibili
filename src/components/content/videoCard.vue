@@ -21,7 +21,7 @@
           {{ video.progress || '进行至第6周' }}
         </div>
         <div class="text-xs text-gray-400">
-          {{ video.views }}人参加
+          {{ video.views }}次浏览
         </div>
       </div>
     </div>

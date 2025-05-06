@@ -85,8 +85,18 @@
             @mousedown="selectSuggestion(suggestion)"
           >
             <div class="flex items-center">
-              <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              <svg
+                class="w-4 h-4 mr-2 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                ></path>
               </svg>
               <span>{{ suggestion }}</span>
             </div>
@@ -123,34 +133,77 @@
     <div class="ml-auto flex items-center gap-3">
       <!-- 未登录状态显示登录/注册按钮 -->
       <template v-if="!userStore.isLoggedIn">
-        <el-button type="primary" plain @click="showLoginModal"
-          >登录 | 注册</el-button
+        <span
+          @click="showLoginModal"
+          class="text-black hover:text-[#2976d3] cursor-pointer text-[15px]"
         >
+          登录 | 注册
+        </span>
       </template>
-
       <!-- 登录后状态显示用户信息 -->
       <template v-else>
         <el-dropdown trigger="click" @command="handleCommand">
-          <div class="flex items-center cursor-pointer">
+          <div class="flex items-center cursor-pointer ml-5 mr-10 w-[100px]">
             <img
-              :src="userStore.user?.avatar || '/src/assets/avatar-default.png'"
+              :src="user.avatar ? getCompleteFileUrl(user.avatar) : '/src/assets/avatar-default.png'"
               class="w-8 h-8 rounded-full mr-2"
-              alt="头像"
+              alt="头像"  
             />
-            <span class="text-sm">{{ userStore.username }}</span>
+            <span class="text-sm" >{{ userStore.username }}</span>
             <el-icon class="ml-1"><arrow-down /></el-icon>
           </div>
+      
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="profile">个人中心</el-dropdown-item>
-              <el-dropdown-item command="favorites">我的收藏</el-dropdown-item>
-              <el-dropdown-item command="history">观看历史</el-dropdown-item>
-              <el-dropdown-item divided command="logout"
-                >退出登录</el-dropdown-item
-              >
+              <el-dropdown-item command="chat">
+                消息
+                <el-badge v-if="unreadCount > 0" :value="unreadCount" class="ml-1" />
+              </el-dropdown-item>
+              <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
+
+        <!-- 上传视频按钮 -->
+        <el-button
+          type="primary"
+          class="mr-3 flex items-center"
+          style="background-color: #2976d3; border-color: #2976d3"
+          @click="navigateToUpload"
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 18 18"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            class="header-upload-entry__icon mr-1"
+          >
+            <path
+              d="M12.0824 10H14.1412C15.0508 10 15.7882 10.7374 15.7882 11.6471V12.8824C15.7882 13.792 15.0508 14.5294 14.1412 14.5294H3.84707C2.93743 14.5294 2.20001 13.792 2.20001 12.8824V11.6471C2.20001 10.7374 2.93743 10 3.84707 10H5.90589"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></path>
+            <path
+              d="M8.99413 11.2353L8.99413 3.82353"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></path>
+            <path
+              d="M12.0823 6.29413L8.9941 3.20589L5.90587 6.29413"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            ></path>
+          </svg>
+          上传视频
+        </el-button>
       </template>
     </div>
   </div>
@@ -160,11 +213,12 @@
 <script setup lang="ts">
 import HeaderNav from '@/components/headerNav/index.vue'
 import LoginModal from '@/components/LoginModal.vue'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowDown } from '@element-plus/icons-vue'
+import { ArrowDown, Plus } from '@element-plus/icons-vue'
 import { useUserStore } from '../../store/user'
-import { videoApi } from '../../services/api'
+import { videoApi, chatApi, userApi } from '../../services/api'
+import { socketService } from '../../services/socket'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -174,11 +228,92 @@ const showSuggestions = ref(false)
 const searchSuggestions = ref<string[]>([])
 const hotSearches = ref<string[]>([])
 const hideTimeout = ref<number | null>(null)
+const unreadCount = ref(0)
+const user = ref(userStore.user)
+console.log('userStore.user', userStore.user);
+
+const getCompleteFileUrl = (filePath: string): string => {
+  console.log('filePath', filePath);
+  
+  // 如果是空值则返回空字符串
+  if (!filePath) {
+    return '';
+  }
+  
+  // 如果已经是完整URL，则直接返回
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+    return filePath;
+  }
+  
+  // 获取环境变量中的服务器地址，默认为本地开发环境
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+  
+  // 如果以uploads开头，意味着是上传路径
+  if (filePath.startsWith('/uploads/') || filePath.startsWith('uploads/')) {
+    // 规范化路径
+    const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+    return `${API_BASE_URL}${normalizedPath}`;
+  }
+  
+  // 其他情况，确保添加uploads前缀
+  const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+  return `${API_BASE_URL}/uploads${normalizedPath}`;
+};
 
 // 热门搜索词
-onMounted(() => {
+onMounted(async () => {
   loadHotSearches()
+  console.log('用户信息:', userStore.user);
+  console.log('用户头像路径:', userStore.user?.avatar);
+  if(userStore.user?.id){
+    user.value = await userApi.getUserInfo(userStore.user.id)
+    console.log('用户信息:', user.value);
+  }
+  // 初始化聊天功能
+  if (userStore.isLoggedIn) {
+    // 获取未读消息数量
+    fetchUnreadCount()
+    
+    // 初始化WebSocket
+    socketService.init()
+    
+    // 监听新消息
+    const cleanupNewMessage = socketService.onNewMessage(() => {
+      fetchUnreadCount()
+    })
+    
+    // 监听未读消息数更新事件
+    const handleUnreadCountUpdated = (event: CustomEvent) => {
+      unreadCount.value = event.detail
+    }
+    
+    window.addEventListener('unreadCountUpdated', handleUnreadCountUpdated as EventListener)
+    
+    // 检查localStorage是否有最新的未读消息数
+    const storedCount = localStorage.getItem('unreadMessageCount')
+    if (storedCount) {
+      unreadCount.value = parseInt(storedCount)
+    }
+    
+    // 组件卸载时清理
+    onUnmounted(() => {
+      cleanupNewMessage()
+      window.removeEventListener('unreadCountUpdated', handleUnreadCountUpdated as EventListener)
+    })
+  }
 })
+
+// 获取未读消息数量
+const fetchUnreadCount = async () => {
+  try {
+    const count = await chatApi.getUnreadCount()
+    console.log('未读消息数量', count)
+    unreadCount.value = typeof count === 'number' ? count : 0
+  } catch (error) {
+    console.error('获取未读消息数量失败:', error)
+    unreadCount.value = 0
+  }
+}
 
 // 模拟加载热门搜索
 const loadHotSearches = async () => {
@@ -266,6 +401,9 @@ const handleCommand = (command: string) => {
     case 'profile':
       router.push('/profile')
       break
+    case 'chat':
+      router.push('/chat')
+      break
     case 'favorites':
       router.push('/favorites')
       break
@@ -274,9 +412,51 @@ const handleCommand = (command: string) => {
       break
     case 'logout':
       userStore.logout()
+      socketService.disconnect() // 断开WebSocket连接
       break
   }
 }
+
+// 导航到上传视频页面
+const navigateToUpload = () => {
+  router.push('/upload')
+}
+
+// 监听用户登录状态变化，当状态变化时重新获取未读消息计数
+watch(() => userStore.isLoggedIn, (newLoginState) => {
+  console.log('用户登录状态变化:', newLoginState);
+  
+  // 清空旧的未读消息计数
+  unreadCount.value = 0;
+  
+  // 如果是登录状态，获取未读消息并初始化WebSocket
+  if (newLoginState) {
+    fetchUnreadCount();
+    socketService.init();
+  } else {
+    // 如果退出登录，断开WebSocket连接
+    socketService.disconnect();
+  }
+});
+
+// 监听localStorage中token变化，可能是其他页面登录
+watch(() => localStorage.getItem('token'), (newToken) => {
+  if (newToken !== userStore.token) {
+    // token变化，可能是在其他标签页登录或退出
+    console.log('Token变化,重新初始化状态');
+    
+    // 先断开现有连接
+    socketService.disconnect();
+    
+    // 如果有新token，重新初始化
+    if (newToken) {
+      fetchUnreadCount();
+      socketService.init();
+    } else {
+      unreadCount.value = 0;
+    }
+  }
+}, { immediate: true });
 </script>
 
 <style scoped></style>

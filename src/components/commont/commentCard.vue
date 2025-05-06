@@ -2,11 +2,12 @@
     <div class="comment-item flex">
       <img
         :src="
-          comment.user?.avatar || 'https://picsum.photos/100/100?random=user'
+          comment.user?.avatar ? getCompleteFileUrl(comment.user.avatar) : '/src/assets/avatar-default.png'
         "
         alt="评论头像"
-        class="rounded-full mr-3"
+        class="rounded-full mr-3 cursor-pointer"
         :class="child === 'child' ? 'w-8 h-8' : 'w-10 h-10'"
+        @click="goToChat"
       />
       <div class="flex-1">
         <div class="flex items-center text-sm">
@@ -43,6 +44,8 @@
 
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue'
+import { useRouter } from 'vue-router'
+import { useUserStore } from '../../store/user'
 
 console.log(123);
 console.log(5678);
@@ -50,6 +53,36 @@ console.log(5678);
 console.log(999);
 console.log(888);
 
+// 获取router和用户信息
+const router = useRouter()
+const userStore = useUserStore()
+
+// 获取完整的文件URL
+const getCompleteFileUrl = (filePath: string): string => {
+  // 如果是空值则返回空字符串
+  if (!filePath) {
+    return '';
+  }
+  
+  // 如果已经是完整URL，则直接返回
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+    return filePath;
+  }
+  
+  // 获取环境变量中的服务器地址，默认为本地开发环境
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+  
+  // 如果以uploads开头，意味着是上传路径
+  if (filePath.startsWith('/uploads/') || filePath.startsWith('uploads/')) {
+    // 规范化路径
+    const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+    return `${API_BASE_URL}${normalizedPath}`;
+  }
+  
+  // 其他情况，确保添加uploads前缀
+  const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+  return `${API_BASE_URL}/uploads${normalizedPath}`;
+};
 
 // 定义接收的属性
 const props = defineProps({
@@ -99,6 +132,17 @@ const likeComment = (commentId: number) => {
 // 回复评论
 const replyToComment = (commentId: number) => {
   emit('reply', commentId)
+}
+
+// 点击头像跳转到聊天页面
+const goToChat = () => {
+  // 如果评论者是当前用户或未登录，不进行跳转
+  if (!userStore.isLoggedIn || props.comment.user?.id === userStore.userId) {
+    return
+  }
+  
+  // 跳转到与评论者的聊天页面
+  router.push(`/chat/${props.comment.user?.id}`)
 }
 </script>
 

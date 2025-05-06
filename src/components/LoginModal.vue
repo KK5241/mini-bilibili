@@ -93,6 +93,8 @@ import { ref, reactive, defineExpose } from 'vue'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '../store/user'
+import { socketService } from '../services/socket'
+import { chatApi } from '../services/api'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const userStore = useUserStore()
@@ -166,6 +168,42 @@ const handleSubmit = async () => {
     if (success) {
       dialogVisible.value = false
       resetForm()
+      
+      // 登录成功后初始化WebSocket连接
+      socketService.init()
+      
+      // 获取最新的未读消息数并广播更新
+      try {
+        // 等待用户附加信息获取完成
+        // 注意：login/register方法内部已经调用了fetchUserAdditionalInfo，
+        // 但这里我们可以等待一下以确保数据都已更新
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        const count = await chatApi.getUnreadCount()
+        const unreadCount = typeof count === 'number' ? count : 0
+        
+        // 更新本地存储
+        localStorage.setItem('unreadMessageCount', String(unreadCount))
+        
+        // 触发自定义事件通知其他组件更新
+        window.dispatchEvent(new CustomEvent('unreadCountUpdated', { 
+          detail: unreadCount 
+        }))
+        
+        // 触发附加的自定义事件，通知其他组件用户已登录并且store已更新
+        window.dispatchEvent(new CustomEvent('userLoggedIn', {
+          detail: {
+            userId: userStore.userId,
+            username: userStore.username,
+            lastLogin: userStore.lastLogin
+          }
+        }))
+
+        // 刷新页面以应用新的登录状态
+        window.location.reload()
+      } catch (error) {
+        console.error('获取未读消息数量失败:', error)
+      }
     }
   } catch (error) {
     console.error('表单验证失败', error)

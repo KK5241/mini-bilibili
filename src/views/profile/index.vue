@@ -13,7 +13,8 @@
             <img
               :src="profileData.avatar || '/src/assets/avatar-default.png'"
               alt="用户头像"
-              class="w-24 h-24 rounded-full mr-6"
+              class="w-24 h-24 rounded-full mr-6 cursor-pointer"
+              @click="goToChat"
             />
             <div class="flex-1">
               <div class="flex items-center mb-2">
@@ -117,7 +118,7 @@
                 <div class="mt-2">
                   <div class="text-sm font-medium line-clamp-2">{{ video.title }}</div>
                   <div class="flex justify-between items-center mt-1 text-xs text-gray-500">
-                    <span>{{ video.views }}次观看</span>
+                      <span>{{ video.views }}次观看</span>
                     <span>{{ formatDate(video.createdAt) }}</span>
                   </div>
                 </div>
@@ -131,30 +132,30 @@
               暂无历史记录
             </div>
             <div v-else class="space-y-4">
-              <div v-for="video in historyVideos" :key="video.id" class="flex cursor-pointer" @click="goToVideo(video.id)">
+              <div v-for="video in historyVideos" :key="video.id" class="flex cursor-pointer" @click="goToVideo(video.video.id)">
                 <div class="relative w-1/5">
                   <img
-                    :src="video.cover"
+                    :src="video.video.cover"
                     alt="视频封面"
                     class="w-full aspect-video object-cover rounded"
                   />
                   <div class="absolute bottom-0 right-0 bg-black bg-opacity-70 text-white text-xs px-1 rounded">
-                    {{ video.duration || '00:00' }}
+                    {{ video.video.duration || '00:00' }}
                   </div>
                 </div>
                 <div class="w-4/5 pl-4">
-                  <h3 class="text-base font-medium mb-2">{{ video.title }}</h3>
+                  <h3 class="text-base font-medium mb-2">{{ video.video.title }}</h3>
                   <div class="flex items-center text-xs text-gray-500">
                     <div class="flex items-center mr-4">
                       <img
-                        :src="video.user?.avatar || '/src/assets/avatar-default.png'"
+                        :src="video.user?.avatar ? getCompleteFileUrl(video.user.avatar) : '/src/assets/avatar-default.png'"
                         class="w-5 h-5 rounded-full mr-1"
                         alt="用户头像"
                       />
                       <span>{{ video.user?.username }}</span>
                     </div>
-                    <div class="mr-4">{{ video.views }}次观看</div>
-                    <div>观看于 {{ formatDate(video.viewedAt || video.createdAt) }}</div>
+                    <div class="mr-4">{{ video.video.views }}次观看</div>
+                    <div>观看于 {{ formatDate(video.video.viewedAt || video.video.createdAt) }}</div>
                   </div>
                 </div>
               </div>
@@ -179,7 +180,7 @@
             class="flex items-center py-3 border-b last:border-0"
           >
             <img
-              :src="user.avatar || '/src/assets/avatar-default.png'"
+              :src="user.avatar ? getCompleteFileUrl(user.avatar) : '/src/assets/avatar-default.png'"
               class="w-10 h-10 rounded-full mr-3"
               alt="用户头像"
             />
@@ -204,37 +205,95 @@
         v-model="editDialogVisible"
         title="编辑个人资料"
         width="30%"
+        class="user-profile-dialog"
+        :close-on-click-modal="false"
       >
-        <el-form :model="editForm" label-width="80px">
-          <el-form-item label="用户名">
-            <el-input v-model="editForm.username" />
-          </el-form-item>
-          <el-form-item label="个人简介">
-            <el-input v-model="editForm.bio" type="textarea" rows="3" />
-          </el-form-item>
-          <el-form-item label="头像">
-            <div class="flex items-center">
-              <img
-                :src="editForm.avatar || '/src/assets/avatar-default.png'"
-                class="w-16 h-16 rounded-full mr-4"
-                alt="头像预览"
-              />
-              <el-upload
-                class="avatar-uploader"
-                action="/api/upload"
-                :show-file-list="false"
-                :before-upload="beforeAvatarUpload"
-                :on-success="handleAvatarSuccess"
-              >
-                <el-button type="primary">更换头像</el-button>
-              </el-upload>
-            </div>
-          </el-form-item>
-        </el-form>
+        <el-tabs v-model="activeEditTab">
+          <el-tab-pane label="基本信息" name="basic">
+            <el-form :model="editForm" :rules="editRules" ref="editFormRef" label-width="80px">
+              <el-form-item label="用户名" prop="username">
+                <el-input v-model="editForm.username"   :disabled="true"  placeholder="请输入用户名" maxlength="20" show-word-limit />
+              </el-form-item>
+              <el-form-item label="个人简介" prop="bio">
+                <el-input 
+                  v-model="editForm.bio" 
+                  type="textarea" 
+                  rows="3" 
+                  placeholder="介绍一下自己吧..."
+                  maxlength="200"
+                  show-word-limit 
+                />
+              </el-form-item>
+              <el-form-item label="头像">
+                <div class="flex items-center">
+                  <div class="relative group w-16 h-16 rounded-full overflow-hidden">
+                    <img
+                      :src="editForm.avatarPreview || (editForm.avatar ? getCompleteFileUrl(editForm.avatar) : '/src/assets/avatar-default.png')"
+                      class="w-full h-full object-cover"
+                      alt="头像预览"
+                    />
+                    <div class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <el-icon class="text-white text-xl cursor-pointer" @click="triggerAvatarUpload">
+                        <i-ep-camera />
+                      </el-icon>
+                    </div>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif"
+                    class="hidden"
+                    ref="avatarInput"
+                    @change="handleAvatarChange"
+                  />
+                  <div class="ml-4">
+                    <el-button type="primary" size="small" @click="triggerAvatarUpload">更换头像</el-button>
+                    <div class="text-xs text-gray-500 mt-1">支持JPG、PNG、GIF格式，最大2MB</div>
+                  </div>
+                </div>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+          
+          <el-tab-pane label="修改密码" name="password">
+            <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef" label-width="100px">
+              <el-form-item label="当前密码" prop="currentPassword">
+                <el-input 
+                  v-model="passwordForm.currentPassword" 
+                  type="password" 
+                  placeholder="请输入当前密码" 
+                  show-password
+                />
+              </el-form-item>
+              <el-form-item label="新密码" prop="newPassword">
+                <el-input 
+                  v-model="passwordForm.newPassword" 
+                  type="password" 
+                  placeholder="请输入新密码" 
+                  show-password
+                />
+              </el-form-item>
+              <el-form-item label="确认新密码" prop="confirmPassword">
+                <el-input 
+                  v-model="passwordForm.confirmPassword" 
+                  type="password" 
+                  placeholder="请再次输入新密码" 
+                  show-password
+                />
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+        </el-tabs>
+        
         <template #footer>
           <span class="dialog-footer">
-            <el-button @click="editDialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="updateProfile">确认</el-button>
+            <el-button @click="cancelEdit">取消</el-button>
+            <el-button 
+              type="primary" 
+              @click="updateProfile" 
+              :loading="submitting"
+            >
+              确认
+            </el-button>
           </span>
         </template>
       </el-dialog>
@@ -243,15 +302,83 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { videoApi, userApi } from '../../services/api';
+import { videoApi, userApi, uploadApi } from '../../services/api';
 import { useUserStore } from '../../store/user';
 import { ElMessage } from 'element-plus';
+import type { FormInstance } from 'element-plus';
+
+// 设置一些基础类型
+interface ProfileData {
+  id: number;
+  username: string;
+  avatar: string;
+  bio: string;
+  followingCount: number;
+  followersCount: number;
+  likeCount: number;
+}
+
+interface VideoItem {
+  id: number;
+  title: string;
+  description?: string;
+  cover: string;
+  videoUrl: string;
+  duration?: string;
+  views: number;
+  createdAt: string;
+  [key: string]: any;
+}
+
+interface HistoryItem {
+  id: number;
+  video: VideoItem;
+  user?: any;
+  viewedAt?: string;
+  [key: string]: any;
+}
+
+interface UserItem {
+  id: number;
+  username: string;
+  avatar?: string;
+  bio?: string;
+  isFollowed?: boolean;
+  [key: string]: any;
+}
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+
+// 添加辅助函数处理文件URL
+const getCompleteFileUrl = (filePath: string): string => {
+  // 如果是空值则返回空字符串
+  if (!filePath) {
+    return '';
+  }
+  
+  // 如果已经是完整URL，则直接返回
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+    return filePath;
+  }
+  
+  // 获取环境变量中的服务器地址，默认为本地开发环境
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+  
+  // 如果以uploads开头，意味着是上传路径
+  if (filePath.startsWith('/uploads/') || filePath.startsWith('uploads/')) {
+    // 规范化路径
+    const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+    return `${API_BASE_URL}${normalizedPath}`;
+  }
+  
+  // 其他情况，确保添加uploads前缀
+  const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
+  return `${API_BASE_URL}/uploads${normalizedPath}`;
+};
 
 // 用户ID，如果路由参数没有则使用当前登录用户ID
 const userId = computed(() => {
@@ -265,7 +392,7 @@ const isCurrentUser = computed(() => {
 
 // 状态数据
 const isLoading = ref(true);
-const profileData = ref({
+const profileData = ref<ProfileData>({
   id: 0,
   username: '',
   avatar: '',
@@ -276,18 +403,66 @@ const profileData = ref({
 });
 const isFollowed = ref(false);
 const activeTab = ref('videos');
-const userVideos = ref([]);
-const favoriteVideos = ref([]);
-const historyVideos = ref([]);
+const userVideos = ref<VideoItem[]>([]);
+const favoriteVideos = ref<VideoItem[]>([]);
+const historyVideos = ref<HistoryItem[]>([]);
 const followDialogVisible = ref(false);
 const followDialogType = ref('following'); // 'following' 或 'followers'
-const followList = ref([]);
+const followList = ref<UserItem[]>([]);
 const editDialogVisible = ref(false);
-const editForm = ref({
+const activeEditTab = ref('basic');
+const submitting = ref(false);
+const avatarInput = ref<HTMLInputElement | null>(null);
+const editFormRef = ref<FormInstance | null>(null);
+const passwordFormRef = ref<FormInstance | null>(null);
+
+const editForm = reactive({
   username: '',
   bio: '',
-  avatar: ''
+  avatar: '',
+  avatarPreview: '',
+  avatarFile: null as File | null
 });
+
+const passwordForm = reactive({
+  currentPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+});
+
+// 表单验证规则
+const editRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 2, max: 20, message: '用户名长度应为2-20个字符', trigger: 'blur' }
+  ],
+  bio: [
+    { max: 200, message: '个人简介最多200个字符', trigger: 'blur' }
+  ]
+};
+
+const passwordRules = {
+  currentPassword: [
+    { required: true, message: '请输入当前密码', trigger: 'blur' }
+  ],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码长度至少为6个字符', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请再次输入新密码', trigger: 'blur' },
+    { 
+      validator: (rule: any, value: string, callback: (error?: Error) => void) => {
+        if (value !== passwordForm.newPassword) {
+          callback(new Error('两次输入的密码不一致'));
+        } else {
+          callback();
+        }
+      }, 
+      trigger: 'blur' 
+    }
+  ]
+};
 
 // 标签页配置
 const tabs = [
@@ -301,12 +476,18 @@ const loadUserProfile = async () => {
   try {
     isLoading.value = true;
     const response = await userApi.getUserProfile(userId.value);
-    profileData.value = response;
+    const profileResponse = response as unknown as ProfileData;
+    
+    // 确保头像URL是完整路径
+    profileData.value = {
+      ...profileResponse,
+      avatar: profileResponse.avatar ? getCompleteFileUrl(profileResponse.avatar) : ''
+    };
     
     // 检查是否已关注该用户
     if (userStore.isLoggedIn && !isCurrentUser.value) {
       const following = await userApi.getFollowing(userStore.userId);
-      isFollowed.value = following.some(user => user.id === userId.value);
+      isFollowed.value = Array.isArray(following) && following.some((user: UserItem) => user.id === userId.value);
     }
     
     // 加载第一个标签页的数据
@@ -320,21 +501,40 @@ const loadUserProfile = async () => {
 };
 
 // 根据当前标签页加载数据
-const loadTabData = async (tab) => {
+const loadTabData = async (tab: string) => {
   try {
     switch (tab) {
       case 'videos':
         const videosRes = await userApi.getUserVideos(userId.value);
-        userVideos.value = videosRes;
+        // 处理视频列表，确保封面图片URL是完整路径
+        userVideos.value = ((videosRes as unknown) as VideoItem[]).map(video => ({
+          ...video,
+          cover: video.cover ? getCompleteFileUrl(video.cover) : ''
+        }));
         break;
       case 'favorites':
         const favoritesRes = await userApi.getUserFavorites(userId.value);
-        favoriteVideos.value = favoritesRes;
+        // 处理收藏列表，确保封面图片URL是完整路径
+        favoriteVideos.value = ((favoritesRes as unknown) as VideoItem[]).map(video => ({
+          ...video,
+          cover: video.cover ? getCompleteFileUrl(video.cover) : ''
+        }));
         break;
       case 'history':
         if (isCurrentUser.value) {
           const historyRes = await userApi.getViewHistory(userId.value);
-          historyVideos.value = historyRes;
+          // 处理历史记录，确保视频封面和用户头像URL是完整路径
+          historyVideos.value = ((historyRes as unknown) as HistoryItem[]).map(item => ({
+            ...item,
+            video: {
+              ...item.video,
+              cover: item.video.cover ? getCompleteFileUrl(item.video.cover) : ''
+            },
+            user: item.user ? {
+              ...item.user,
+              avatar: item.user.avatar ? getCompleteFileUrl(item.user.avatar) : ''
+            } : undefined
+          }));
         }
         break;
     }
@@ -345,7 +545,7 @@ const loadTabData = async (tab) => {
 };
 
 // 格式化日期
-const formatDate = (dateString) => {
+const formatDate = (dateString: string) => {
   if (!dateString) return '';
 
   const date = new Date(dateString);
@@ -396,7 +596,7 @@ const toggleFollow = async () => {
 };
 
 // 关注/取消关注弹窗中的用户
-const toggleFollowUser = async (user) => {
+const toggleFollowUser = async (user: UserItem) => {
   if (!userStore.isLoggedIn) {
     ElMessage.warning('请先登录');
     return;
@@ -419,23 +619,31 @@ const toggleFollowUser = async (user) => {
 };
 
 // 显示关注/粉丝弹窗
-const showFollowDialog = async (type) => {
+const showFollowDialog = async (type: 'following' | 'followers') => {
   followDialogType.value = type;
   followDialogVisible.value = true;
   
   try {
     if (type === 'following') {
       const following = await userApi.getFollowing(userId.value);
-      followList.value = following;
+      // 处理返回的数据，确保头像URL是完整路径
+      followList.value = ((following as unknown) as UserItem[]).map(user => ({
+        ...user,
+        avatar: user.avatar ? getCompleteFileUrl(user.avatar) : ''
+      }));
     } else {
       const followers = await userApi.getFollowers(userId.value);
-      followList.value = followers;
+      // 处理返回的数据，确保头像URL是完整路径
+      followList.value = ((followers as unknown) as UserItem[]).map(user => ({
+        ...user,
+        avatar: user.avatar ? getCompleteFileUrl(user.avatar) : ''
+      }));
     }
     
     // 标记已关注的用户
     if (userStore.isLoggedIn) {
       const myFollowing = await userApi.getFollowing(userStore.userId);
-      const followingIds = myFollowing.map(user => user.id);
+      const followingIds = ((myFollowing as unknown) as UserItem[]).map((user: UserItem) => user.id);
       
       followList.value = followList.value.map(user => ({
         ...user,
@@ -450,58 +658,225 @@ const showFollowDialog = async (type) => {
 
 // 显示编辑资料弹窗
 const showEditDialog = () => {
-  editForm.value = {
-    username: profileData.value.username,
-    bio: profileData.value.bio || '',
-    avatar: profileData.value.avatar
-  };
+  editForm.username = profileData.value.username;
+  editForm.bio = profileData.value.bio || '';
+  editForm.avatar = profileData.value.avatar || ''; // 这里使用的是已经处理过的完整URL
+  editForm.avatarPreview = '';
+  editForm.avatarFile = null;
+  
+  // 清空密码表单
+  passwordForm.currentPassword = '';
+  passwordForm.newPassword = '';
+  passwordForm.confirmPassword = '';
+  
+  // 默认显示基本信息标签页
+  activeEditTab.value = 'basic';
+  
   editDialogVisible.value = true;
+};
+
+// 取消编辑
+const cancelEdit = () => {
+  editDialogVisible.value = false;
+  // 重置表单
+  if (editFormRef.value) {
+    editFormRef.value.resetFields();
+  }
+  if (passwordFormRef.value) {
+    passwordFormRef.value.resetFields();
+  }
 };
 
 // 更新个人资料
 const updateProfile = async () => {
-  try {
-    await userApi.updateProfile(editForm.value);
-    ElMessage.success('资料更新成功');
+  // 根据当前激活的标签页验证不同的表单
+  if (activeEditTab.value === 'basic') {
+    // 验证基本信息表单
+    if (!editFormRef.value) return;
     
-    // 更新当前页面显示的资料
-    profileData.value = {
-      ...profileData.value,
-      ...editForm.value
-    };
+    await editFormRef.value.validate(async (valid) => {
+      if (!valid) return;
+      
+      try {
+        submitting.value = true;
+        
+        // 如果有新头像，先上传
+        if (editForm.avatarFile) {
+          try {
+            // 确保token存在
+            const token = userStore.token || localStorage.getItem('token');
+            if (!token) {
+              throw new Error('未登录，无法上传头像');
+            }
+            
+            // 使用API服务上传头像
+            editForm.avatar = await uploadApi.uploadAvatar(
+              editForm.avatarFile, 
+              token
+            );
+            console.log("上传头像成功，URL:", editForm.avatar);
+          } catch (error) {
+            console.error('上传头像失败:', error);
+            ElMessage.error('上传头像失败，请重试');
+            submitting.value = false;
+            return;
+          }
+        }
+        
+        // 更新用户资料
+        const updateData = {
+          username: editForm.username,
+          bio: editForm.bio || '',
+          // 如果avatar为空字符串，传null或不传
+          avatar: editForm.avatar || null
+        };
+        
+        // 确保用户已登录
+        if (!userStore.isLoggedIn) {
+          ElMessage.error('未登录状态，无法更新资料');
+          submitting.value = false;
+          return;
+        }
+        
+        const id = userId.value;
+        const result = await userApi.updateProfile(updateData, id);
+        console.log("更新资料结果:", result);
+        
+        // 使用API返回的数据更新当前显示
+        if (result && typeof result === 'object') {
+          // 使用类型断言转换响应结果
+          const userData = result as { username?: string; bio?: string; avatar?: string };
+          
+          // 处理头像URL，确保是完整URL
+          const avatarUrl = userData.avatar ? getCompleteFileUrl(userData.avatar) : 
+                           (editForm.avatar ? getCompleteFileUrl(editForm.avatar) : profileData.value.avatar);
+          
+          // 更新当前页面显示的资料
+          profileData.value = {
+            ...profileData.value,
+            username: userData.username || updateData.username,
+            bio: userData.bio || updateData.bio,
+            avatar: avatarUrl
+          };
+          
+          // 更新store中的用户信息
+          userStore.updateUserInfo({
+            username: userData.username || updateData.username,
+            avatar: avatarUrl
+          });
+        } else {
+          // 如果没有返回有效数据，使用更新前的数据更新UI
+          
+          // 处理头像URL，确保是完整URL
+          const avatarUrl = editForm.avatar ? getCompleteFileUrl(editForm.avatar) : profileData.value.avatar;
+          
+          profileData.value = {
+            ...profileData.value,
+            username: updateData.username,
+            bio: updateData.bio,
+            avatar: avatarUrl
+          };
+          
+          // 更新store中的用户信息
+          userStore.updateUserInfo({
+            username: updateData.username,
+            avatar: avatarUrl
+          });
+        }
+        
+        ElMessage.success('资料更新成功');
+        editDialogVisible.value = false;
+      } catch (error) {
+        console.error('更新资料失败:', error);
+        ElMessage.error('更新资料失败，请稍后再试');
+      } finally {
+        submitting.value = false;
+      }
+    });
+  } else {
+    // 验证密码表单
+    if (!passwordFormRef.value) return;
     
-    // 更新store中的用户名
-    userStore.updateUsername(editForm.value.username);
-    
-    editDialogVisible.value = false;
-  } catch (error) {
-    console.error('更新资料失败:', error);
-    ElMessage.error('更新资料失败');
+    await passwordFormRef.value.validate(async (valid) => {
+      if (!valid) return;
+      
+      try {
+        submitting.value = true;
+        
+        // 确保用户已登录
+        if (!userStore.isLoggedIn) {
+          ElMessage.error('未登录状态，无法修改密码');
+          submitting.value = false;
+          return;
+        }
+        
+        // 调用修改密码API - 只提交密码相关信息，不涉及用户资料
+        await userApi.updatePassword(
+          passwordForm.currentPassword,
+          passwordForm.newPassword
+        );
+        
+        ElMessage.success('密码修改成功');
+        editDialogVisible.value = false;
+      } catch (error) {
+        console.error('修改密码失败:', error);
+        ElMessage.error('修改密码失败，请检查当前密码是否正确');
+      } finally {
+        submitting.value = false;
+      }
+    });
   }
 };
 
-// 头像上传前检查
-const beforeAvatarUpload = (file) => {
-  const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
-  const isLt2M = file.size / 1024 / 1024 < 2;
-
-  if (!isJPG) {
-    ElMessage.error('头像只能是 JPG 或 PNG 格式!');
-  }
-  if (!isLt2M) {
-    ElMessage.error('头像大小不能超过 2MB!');
-  }
-  return isJPG && isLt2M;
+// 触发头像上传
+const triggerAvatarUpload = () => {
+  avatarInput.value?.click();
 };
 
-// 头像上传成功回调
-const handleAvatarSuccess = (res, file) => {
-  editForm.value.avatar = res.url;
+// 处理头像文件变化
+const handleAvatarChange = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (!target.files || target.files.length === 0) return;
+
+  const file = target.files[0];
+  
+  // 检查文件类型
+  const isValidType = ['image/jpeg', 'image/png', 'image/gif'].includes(file.type);
+  if (!isValidType) {
+    ElMessage.error('请上传JPG、PNG或GIF格式的图片');
+    return;
+  }
+  
+  // 检查文件大小
+  const isValidSize = file.size / 1024 / 1024 < 2;
+  if (!isValidSize) {
+    ElMessage.error('图片大小不能超过2MB');
+    return;
+  }
+  
+  // 预览图片
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    editForm.avatarPreview = e.target?.result as string;
+  }
+  reader.readAsDataURL(file);
+  
+  // 保存文件对象
+  editForm.avatarFile = file;
 };
 
 // 跳转到视频详情页
-const goToVideo = (id) => {
+const goToVideo = (id: number) => {
   router.push(`/video?id=${id}`);
+};
+
+// 前往聊天页面
+const goToChat = () => {
+  // 如果是访问自己的主页，不执行任何操作
+  if (isCurrentUser.value) return;
+  
+  // 前往与该用户的聊天页面
+  router.push(`/chat/${userId.value}`);
 };
 
 // 监听标签页变化
@@ -520,5 +895,9 @@ onMounted(() => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.user-profile-dialog :deep(.el-dialog__body) {
+  padding-top: 0;
 }
 </style>

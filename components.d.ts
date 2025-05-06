@@ -12,9 +12,11 @@ declare module 'vue' {
     CommontCard: typeof import('./src/components/commont/commontCard.vue')['default']
     Content: typeof import('./src/components/content/index.vue')['default']
     CourseCard: typeof import('./src/components/content/courseCard.vue')['default']
+    ElBadge: typeof import('element-plus/es')['ElBadge']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCarousel: typeof import('element-plus/es')['ElCarousel']
     ElCarouselItem: typeof import('element-plus/es')['ElCarouselItem']
+    ElCheckbox: typeof import('element-plus/es')['ElCheckbox']
     ElDialog: typeof import('element-plus/es')['ElDialog']
     ElDivider: typeof import('element-plus/es')['ElDivider']
     ElDropdown: typeof import('element-plus/es')['ElDropdown']
@@ -26,6 +28,7 @@ declare module 'vue' {
     ElInput: typeof import('element-plus/es')['ElInput']
     ElLink: typeof import('element-plus/es')['ElLink']
     ElOption: typeof import('element-plus/es')['ElOption']
+    ElProgress: typeof import('element-plus/es')['ElProgress']
     ElRadioButton: typeof import('element-plus/es')['ElRadioButton']
     ElRadioGroup: typeof import('element-plus/es')['ElRadioGroup']
     ElSelect: typeof import('element-plus/es')['ElSelect']
@@ -40,7 +43,11 @@ declare module 'vue' {
     LoginModal: typeof import('./src/components/LoginModal.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
-    VideoCard: typeof import('./src/components/content/videoCard.vue')['default']
+    VideoCard: typeof import('./src/components/VideoCard.vue')['default']
     VideoContent: typeof import('./src/components/content/videoContent.vue')['default']
+    VideoForm: typeof import('./src/components/admin/VideoForm.vue')['default']
+  }
+  export interface ComponentCustomProperties {
+    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
   }
 }
