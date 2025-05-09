@@ -1,12 +1,14 @@
 <template>
-  <div class="bg-[#f5f5f5] py-4 ">
+  <div class="bg-[#f5f5f5] py-4">
     <div>
       <!-- 标题部分 -->
       <div class="flex items-center mb-4">
         <h2 class="text-xl font-bold mr-6">热门视频推荐</h2>
-        <div class="text-green-500 border-b-2 border-green-500 pb-1">最新热门推荐</div>
+        <div class="text-green-500 border-b-2 border-green-500 pb-1">
+          最新热门推荐
+        </div>
       </div>
-      
+
       <!-- 热门视频列表 -->
       <div v-if="isLoading" class="flex justify-center py-8">
         <el-skeleton :rows="3" animated />
@@ -16,14 +18,16 @@
           <VideoCard :video="formatVideoData(video)" />
         </div>
       </div>
-      
+
       <!-- 第二行视频 -->
       <div class="mt-8">
         <div class="flex items-center mb-4">
           <h2 class="text-xl font-bold mr-6">最新上传</h2>
-          <div class="text-green-500 border-b-2 border-green-500 pb-1">查看更多</div>
+          <div class="text-green-500 border-b-2 border-green-500 pb-1">
+            最新视频上传
+          </div>
         </div>
-        
+
         <div v-if="isLoadingRecent" class="flex justify-center py-8">
           <el-skeleton :rows="3" animated />
         </div>
@@ -61,7 +65,8 @@ const formatVideoData = (video) => {
     isPremium: video.isPremium,
     status: video.status,
     hasWisdomCourse: video.hasWisdomCourse,
-    teacher: video.teacher || '未知教师'
+    teacher: video.teacher || '未知教师',
+    category: video.category || '计算机',
   }
 }
 
@@ -71,7 +76,7 @@ const formatUploadTime = (dateString) => {
   const uploadDate = new Date(dateString)
   const diffInMs = now.getTime() - uploadDate.getTime()
   const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
-  
+
   if (diffInDays === 0) {
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60))
     if (diffInHours === 0) {
@@ -94,6 +99,7 @@ const fetchPopularVideos = async () => {
     isLoading.value = true
     const response = await videoApi.getPopularVideos()
     videos.value = response
+    console.log('123', videos.value)
   } catch (error) {
     console.error('获取热门视频失败:', error)
     ElMessage.error('获取热门视频失败，请稍后再试')
@@ -153,4 +159,4 @@ onMounted(() => {
     grid-template-columns: repeat(1, 1fr);
   }
 }
-</style> 
+</style>

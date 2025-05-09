@@ -8,27 +8,7 @@
     to="/school" 
     active-class="nav-active" 
     exact-active-class="nav-active-exact"
-  >学校</router-link>
-  <router-link 
-    to="/textbook" 
-    active-class="nav-active" 
-    exact-active-class="nav-active-exact"
-  >数字教材</router-link>
-  <router-link 
-    to="/school-cloud" 
-    active-class="nav-active" 
-    exact-active-class="nav-active-exact"
-  >学校云</router-link>
-  <router-link 
-    to="/mooc" 
-    active-class="nav-active" 
-    exact-active-class="nav-active-exact"
-  >慕课堂</router-link>
-  <router-link 
-    to="/entrance-exam" 
-    active-class="nav-active" 
-    exact-active-class="nav-active-exact"
-  >升学考研</router-link>
+  >合作学校</router-link>
 </template>
 
 <script setup lang="ts">

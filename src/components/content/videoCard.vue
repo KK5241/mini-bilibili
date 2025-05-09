@@ -1,28 +1,46 @@
 <template>
-  <div class="video-card bg-white rounded shadow-md overflow-hidden cursor-pointer" @click="goToVideo">
+  <div
+    class="video-card bg-white rounded shadow-md overflow-hidden cursor-pointer"
+    @click="goToVideo"
+  >
     <div class="relative">
-      <img :src="video.cover"  class="w-full h-32 object-cover" />
-      <div class="absolute bottom-1 right-1 bg-black bg-opacity-70 text-white text-xs px-1 rounded">
+      <img :src="video.cover" class="w-full h-32 object-cover" />
+      <div
+        class="absolute bottom-1 right-1 bg-black bg-opacity-70 text-white text-xs px-1 rounded"
+      >
         {{ video.duration }}
       </div>
-      <div v-if="video.isPremium" class="absolute top-0 left-0 bg-amber-500 text-white text-xs px-2 py-1">
+      <div
+        v-if="video.isPremium"
+        class="absolute top-0 left-0 bg-amber-500 text-white text-xs px-2 py-1"
+      >
         国家精品
       </div>
     </div>
     <div class="p-3">
-      <div class="text-sm font-semibold mb-1 line-clamp-2">{{ video.title }}</div>
+      <div class="text-sm font-semibold mb-1 line-clamp-2">
+        {{ video.title }}
+      </div>
       <div class="text-xs text-gray-500 mb-2">{{ video.author }}</div>
       <div class="flex justify-between items-center">
         <div v-if="video.status" class="flex gap-1">
-          <button class="bg-blue-500 text-white text-xs px-2 py-1 rounded" @click.stop="certifiedStudy">认证学习</button>
-          <button v-if="video.hasWisdomCourse" class="bg-green-500 text-white text-xs px-2 py-1 rounded" @click.stop="wisdomCourse">智慧课程</button>
+          <button
+            class="bg-blue-500 text-white text-xs px-2 py-1 rounded"
+            @click.stop="certifiedStudy"
+          >
+            认证学习
+          </button>
+          <button
+            class="bg-green-500 text-white text-xs px-2 py-1 rounded"
+            @click.stop="wisdomCourse"
+          >
+            {{ video.category || '计算机' }}
+          </button>
         </div>
         <div v-else class="text-xs text-gray-400">
           {{ video.progress || '进行至第6周' }}
         </div>
-        <div class="text-xs text-gray-400">
-          {{ video.views }}次浏览
-        </div>
+        <div class="text-xs text-gray-400">{{ video.views }}次浏览</div>
       </div>
     </div>
   </div>
@@ -37,10 +55,10 @@ const router = useRouter()
 const props = defineProps({
   video: {
     type: Object,
-    required: true
-  }
+    required: true,
+  },
 })
-
+console.log(props)
 // 点击卡片跳转到视频详情页
 const goToVideo = () => {
   router.push(`/video?id=${props.video.id}`)
@@ -78,4 +96,4 @@ const wisdomCourse = (event: MouseEvent) => {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-</style> 
+</style>

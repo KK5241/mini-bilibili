@@ -41,7 +41,7 @@
                 <!-- 对方的消息 -->
                 <template v-if="message.senderId !== currentUserId">
                   <img 
-                    :src="otherUser.avatar || '/src/assets/avatar-default.png'" 
+                    :src="`http://localhost:3000${otherUser.avatar}` || '/src/assets/avatar-default.png'"
                     class="h-8 w-8 rounded-full mr-2 mt-1 object-cover"
                     alt="用户头像" 
                   />
@@ -56,7 +56,7 @@
                     {{ message.content }}
                   </div>
                   <img 
-                    :src="currentUserAvatar || '/src/assets/avatar-default.png'" 
+                    :src="`http://localhost:3000${user.avatar}` || '/src/assets/avatar-default.png'" 
                     class="h-8 w-8 rounded-full ml-2 mt-1 object-cover"
                     alt="我的头像" 
                   />
@@ -96,7 +96,7 @@
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useUserStore } from '../../store/user';
-import { chatApi } from '../../services/api';
+import { chatApi, userApi } from '../../services/api';
 import { socketService } from '../../services/socket';
 import { ElMessage } from 'element-plus';
 import { ArrowLeft } from '@element-plus/icons-vue';
@@ -104,10 +104,11 @@ import { ArrowLeft } from '@element-plus/icons-vue';
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
-
+const user = ref<any>({});
 const otherUserId = parseInt(route.params.userId as string);
 const currentUserId = userStore.userId;
 const currentUserAvatar = userStore.user?.avatar;
+console.log(currentUserAvatar);
 
 const messagesContainer = ref<HTMLElement | null>(null);
 const loading = ref(true);
@@ -121,7 +122,9 @@ const hasMoreMessages = ref(true);
 // 获取聊天对象信息
 const fetchOtherUserInfo = async () => {
   try {
-    const response = await chatApi.getUserProfile(otherUserId);
+    const response = await userApi.getUserProfile(otherUserId);
+    console.log(response);
+    
     otherUser.value = response;
   } catch (error) {
     console.error('获取用户信息失败:', error);
@@ -143,28 +146,14 @@ const fetchMessages = async (reset = false) => {
     loading.value = true;
     const response = await chatApi.getMessageHistory(otherUserId, page.value);
     
-    // 适配后端返回的新格式 - 处理可能的响应格式差异
-    let newMessages = [];
-    let hasMore = false;
-    
-    if (response && typeof response === 'object') {
-      if (Array.isArray(response)) {
-        // 如果响应是数组，使用旧格式处理
-        newMessages = response;
-        hasMore = newMessages.length >= 20;
-      } else if (response.messages) {
-        // 如果响应包含messages字段，使用新格式处理
-        newMessages = response.messages;
-        hasMore = response.hasMore === true;
-      }
-    }
-    
-    hasMoreMessages.value = hasMore;
+    // 处理响应数据
+    const newMessages = response.messages;
+    hasMoreMessages.value = response.hasMore;
     
     // 追加消息并过滤重复
     const mergedMessages = reset ? newMessages : [...newMessages, ...messages.value];
-    messages.value = mergedMessages.filter((msg: any, index: number, self: any[]) => 
-      index === self.findIndex((m: any) => m.id === msg.id)
+    messages.value = mergedMessages.filter((msg, index, self) => 
+      index === self.findIndex((m) => m.id === msg.id)
     );
     
     page.value++;
@@ -317,7 +306,11 @@ const goBack = () => {
 onMounted(async () => {
   await fetchOtherUserInfo();
   await fetchMessages(true);
-  
+  console.log(userStore.user);
+  if(userStore.user?.id){
+    user.value = await userApi.getUserInfo(userStore.user.id)
+    console.log('用户信息:', user.value);
+  }
   // 初始化WebSocket
   socketService.init();
   const cleanup = socketService.onNewMessage(handleNewMessage);

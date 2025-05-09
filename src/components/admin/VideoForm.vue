@@ -184,7 +184,7 @@
           />
         </div>
         
-        <!-- 其他字段 (精品课程、智慧课程等) -->
+        <!-- 视频类型 -->
         <div class="mb-5">
           <div class="flex items-center mb-2">
             <label class="text-gray-700 font-bold">
@@ -195,6 +195,25 @@
             <el-checkbox v-model="formData.isPremium">精品课程</el-checkbox>
             <el-checkbox v-model="formData.hasWisdomCourse">智慧课程</el-checkbox>
           </div>
+        </div>
+        
+        <!-- 视频分类 -->
+        <div class="mb-5">
+          <div class="flex items-center mb-2">
+            <span class="text-red-500 mr-1">*</span>
+            <label class="text-gray-700 font-bold">
+              视频分类
+            </label>
+          </div>
+          <el-select v-model="formData.category" placeholder="请选择视频分类" class="w-full">
+            <el-option label="文学" value="文学" />
+            <el-option label="理学" value="理学" />
+            <el-option label="计算机" value="计算机" />
+            <el-option label="英语" value="英语" />
+            <el-option label="金融" value="金融" />
+            <el-option label="农学" value="农学" />
+            <el-option label="建筑学" value="建筑学" />
+          </el-select>
         </div>
         
         <!-- 教师名称 -->
@@ -247,7 +266,8 @@ const formData = reactive({
   duration: '',
   isPremium: false,
   hasWisdomCourse: false,
-  teacher: ''
+  teacher: '',
+  category: '计算机' // 默认为计算机分类
 })
 
 // 文件上传相关
@@ -497,6 +517,11 @@ const handleSubmit = async () => {
     return
   }
   
+  if (!formData.category) {
+    ElMessage.warning('请选择视频分类')
+    return
+  }
+  
   try {
     submitting.value = true
     
@@ -514,7 +539,8 @@ const handleSubmit = async () => {
       duration: '',
       isPremium: false,
       hasWisdomCourse: false,
-      teacher: ''
+      teacher: '',
+      category: '计算机'
     })
     
     // 清空预览

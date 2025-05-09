@@ -11,6 +11,7 @@
           <h1 class="text-xl font-bold mb-2">{{ videoDetail.title }}</h1>
           <div class="flex justify-between items-center text-sm text-gray-500">
             <div class="flex items-center">
+              <el-tag type="primary" size="small" class="mr-2">{{ videoDetail.category || '计算机' }}</el-tag>
               <span class="mr-4">{{ videoDetail.views }}次观看</span>
               <span>{{ formatDate(videoDetail.createdAt) }}</span>
             </div>

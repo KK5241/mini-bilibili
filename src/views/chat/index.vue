@@ -29,7 +29,7 @@
               <!-- 头像 -->
               <div class="relative">
                 <img 
-                  :src="conv.otherUser.avatar || '/src/assets/avatar-default.png'" 
+                  :src="`http://localhost:3000${conv.otherUser.avatar}` || '/src/assets/avatar-default.png'" 
                   class="h-12 w-12 rounded-full object-cover"
                   alt="用户头像" 
                 />

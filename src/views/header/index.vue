@@ -145,22 +145,32 @@
         <el-dropdown trigger="click" @command="handleCommand">
           <div class="flex items-center cursor-pointer ml-5 mr-10 w-[100px]">
             <img
-              :src="user.avatar ? getCompleteFileUrl(user.avatar) : '/src/assets/avatar-default.png'"
+              :src="
+                user.avatar
+                  ? getCompleteFileUrl(user.avatar)
+                  : '/src/assets/avatar-default.png'
+              "
               class="w-8 h-8 rounded-full mr-2"
-              alt="头像"  
+              alt="头像"
             />
-            <span class="text-sm" >{{ userStore.username }}</span>
+            <span class="text-sm">{{ userStore.username }}</span>
             <el-icon class="ml-1"><arrow-down /></el-icon>
           </div>
-      
+
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="profile">个人中心</el-dropdown-item>
               <el-dropdown-item command="chat">
                 消息
-                <el-badge v-if="unreadCount > 0" :value="unreadCount" class="ml-1" />
+                <el-badge
+                  v-if="unreadCount > 0"
+                  :value="unreadCount"
+                  class="ml-1"
+                />
               </el-dropdown-item>
-              <el-dropdown-item divided command="logout">退出登录</el-dropdown-item>
+              <el-dropdown-item divided command="logout"
+                >退出登录</el-dropdown-item
+              >
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -168,8 +178,8 @@
         <!-- 上传视频按钮 -->
         <el-button
           type="primary"
-          class="mr-3 flex items-center"
-          style="background-color: #2976d3; border-color: #2976d3"
+          class="mr-1 flex items-center"
+          style="background-color: #2976d3; border-color: #2976d3; margin-right: 5px;"
           @click="navigateToUpload"
         >
           <svg
@@ -204,6 +214,43 @@
           </svg>
           上传视频
         </el-button>
+
+        <!-- 视频审核 -->
+        <el-button
+          v-if="user.role === 'admin'"
+          type="primary"
+          class="mr-3 flex items-cente"
+          style="
+            background-color: rgb(34 197 94 / var(--tw-bg-opacity, 1));
+            border-color: rgb(34 197 94 / var(--tw-bg-opacity, 1));
+          "
+          @click="router.push('/admin')"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 15.5C13.933 15.5 15.5 13.933 15.5 12C15.5 10.067 13.933 8.5 12 8.5C10.067 8.5 8.5 10.067 8.5 12C8.5 13.933 10.067 15.5 12 15.5Z"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+            <path
+              d="M19.4 15A1.65 1.65 0 0 0 20 13.6L21.5 12L20 10.4A1.65 1.65 0 0 0 19.4 9L17.6 8.5L17 6.6A1.65 1.65 0 0 0 15.6 6H13.6L12 4.5L10.4 6H8.4A1.65 1.65 0 0 0 7 6.6L6.5 8.5L4.6 9A1.65 1.65 0 0 0 4 10.4L2.5 12L4 13.6A1.65 1.65 0 0 0 4.6 15L6.5 15.5L7 17.4A1.65 1.65 0 0 0 8.4 18H10.4L12 19.5L13.6 18H15.6A1.65 1.65 0 0 0 17 17.4L17.5 15.5L19.4 15Z"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+
+          网站管理
+        </el-button>
       </template>
     </div>
   </div>
@@ -230,75 +277,82 @@ const hotSearches = ref<string[]>([])
 const hideTimeout = ref<number | null>(null)
 const unreadCount = ref(0)
 const user = ref(userStore.user)
-console.log('userStore.user', userStore.user);
+console.log('userStore.user', userStore.user)
 
 const getCompleteFileUrl = (filePath: string): string => {
-  console.log('filePath', filePath);
-  
+  console.log('filePath', filePath)
+
   // 如果是空值则返回空字符串
   if (!filePath) {
-    return '';
+    return ''
   }
-  
+
   // 如果已经是完整URL，则直接返回
   if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
-    return filePath;
+    return filePath
   }
-  
+
   // 获取环境变量中的服务器地址，默认为本地开发环境
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
-  
+  const API_BASE_URL =
+    import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
+
   // 如果以uploads开头，意味着是上传路径
   if (filePath.startsWith('/uploads/') || filePath.startsWith('uploads/')) {
     // 规范化路径
-    const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
-    return `${API_BASE_URL}${normalizedPath}`;
+    const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`
+    return `${API_BASE_URL}${normalizedPath}`
   }
-  
+
   // 其他情况，确保添加uploads前缀
-  const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`;
-  return `${API_BASE_URL}/uploads${normalizedPath}`;
-};
+  const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`
+  return `${API_BASE_URL}/uploads${normalizedPath}`
+}
 
 // 热门搜索词
 onMounted(async () => {
   loadHotSearches()
-  console.log('用户信息:', userStore.user);
-  console.log('用户头像路径:', userStore.user?.avatar);
-  if(userStore.user?.id){
+  console.log('用户信息:', userStore.user)
+  console.log('用户头像路径:', userStore.user?.avatar)
+  if (userStore.user?.id) {
     user.value = await userApi.getUserInfo(userStore.user.id)
-    console.log('用户信息:', user.value);
+    console.log('用户信息:', user.value)
   }
   // 初始化聊天功能
   if (userStore.isLoggedIn) {
     // 获取未读消息数量
     fetchUnreadCount()
-    
+
     // 初始化WebSocket
     socketService.init()
-    
+
     // 监听新消息
     const cleanupNewMessage = socketService.onNewMessage(() => {
       fetchUnreadCount()
     })
-    
+
     // 监听未读消息数更新事件
     const handleUnreadCountUpdated = (event: CustomEvent) => {
       unreadCount.value = event.detail
     }
-    
-    window.addEventListener('unreadCountUpdated', handleUnreadCountUpdated as EventListener)
-    
+
+    window.addEventListener(
+      'unreadCountUpdated',
+      handleUnreadCountUpdated as EventListener,
+    )
+
     // 检查localStorage是否有最新的未读消息数
     const storedCount = localStorage.getItem('unreadMessageCount')
     if (storedCount) {
       unreadCount.value = parseInt(storedCount)
     }
-    
+
     // 组件卸载时清理
     onUnmounted(() => {
       cleanupNewMessage()
-      window.removeEventListener('unreadCountUpdated', handleUnreadCountUpdated as EventListener)
+      window.removeEventListener(
+        'unreadCountUpdated',
+        handleUnreadCountUpdated as EventListener,
+      )
     })
   }
 })
@@ -423,40 +477,47 @@ const navigateToUpload = () => {
 }
 
 // 监听用户登录状态变化，当状态变化时重新获取未读消息计数
-watch(() => userStore.isLoggedIn, (newLoginState) => {
-  console.log('用户登录状态变化:', newLoginState);
-  
-  // 清空旧的未读消息计数
-  unreadCount.value = 0;
-  
-  // 如果是登录状态，获取未读消息并初始化WebSocket
-  if (newLoginState) {
-    fetchUnreadCount();
-    socketService.init();
-  } else {
-    // 如果退出登录，断开WebSocket连接
-    socketService.disconnect();
-  }
-});
+watch(
+  () => userStore.isLoggedIn,
+  (newLoginState) => {
+    console.log('用户登录状态变化:', newLoginState)
+
+    // 清空旧的未读消息计数
+    unreadCount.value = 0
+
+    // 如果是登录状态，获取未读消息并初始化WebSocket
+    if (newLoginState) {
+      fetchUnreadCount()
+      socketService.init()
+    } else {
+      // 如果退出登录，断开WebSocket连接
+      socketService.disconnect()
+    }
+  },
+)
 
 // 监听localStorage中token变化，可能是其他页面登录
-watch(() => localStorage.getItem('token'), (newToken) => {
-  if (newToken !== userStore.token) {
-    // token变化，可能是在其他标签页登录或退出
-    console.log('Token变化,重新初始化状态');
-    
-    // 先断开现有连接
-    socketService.disconnect();
-    
-    // 如果有新token，重新初始化
-    if (newToken) {
-      fetchUnreadCount();
-      socketService.init();
-    } else {
-      unreadCount.value = 0;
+watch(
+  () => localStorage.getItem('token'),
+  (newToken) => {
+    if (newToken !== userStore.token) {
+      // token变化，可能是在其他标签页登录或退出
+      console.log('Token变化,重新初始化状态')
+
+      // 先断开现有连接
+      socketService.disconnect()
+
+      // 如果有新token，重新初始化
+      if (newToken) {
+        fetchUnreadCount()
+        socketService.init()
+      } else {
+        unreadCount.value = 0
+      }
     }
-  }
-}, { immediate: true });
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped></style>

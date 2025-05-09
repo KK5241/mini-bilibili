@@ -1,7 +1,8 @@
 import axios from 'axios'
 
 // 假设API_BASE_URL已经在文件顶部定义，如果没有，添加此定义
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'
 
 // 创建axios实例
 const api = axios.create({
@@ -30,39 +31,134 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     // 直接返回响应数据
-    return response.data;
+    return response.data
   },
   (error) => {
     if (error.response) {
       // 服务器返回了错误状态码
       if (error.response.status === 401) {
         // 未授权，清除token并跳转到登录页
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
         // 如果在非登录页面，可以考虑跳转到登录页
-        if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
-          window.location.href = '/';
+        if (
+          window.location.pathname !== '/login' &&
+          window.location.pathname !== '/'
+        ) {
+          window.location.href = '/'
         }
       } else if (error.response.status === 403) {
         // 权限不足
-        console.error('权限不足');
+        console.error('权限不足')
       } else if (error.response.status === 404) {
         // 资源不存在
-        console.error('请求的资源不存在');
+        console.error('请求的资源不存在')
       } else if (error.response.status === 500) {
         // 服务器内部错误
-        console.error('服务器内部错误');
+        console.error('服务器内部错误')
       }
     } else if (error.request) {
       // 请求已发送但未收到响应
-      console.error('无法连接到服务器，请检查网络连接');
+      console.error('无法连接到服务器，请检查网络连接')
     } else {
       // 请求设置有误
-      console.error('请求配置错误:', error.message);
+      console.error('请求配置错误:', error.message)
     }
-    return Promise.reject(error);
-  }
+    return Promise.reject(error)
+  },
 )
+
+// 类型定义
+interface ChatMessage {
+  id: number
+  senderId: number
+  receiverId: number
+  content: string
+  createdAt: string
+  isRead: boolean
+}
+
+interface ChatResponse {
+  messages: ChatMessage[]
+  hasMore: boolean
+}
+
+interface VideoResponse {
+  id: number
+  title: string
+  description?: string
+  cover: string
+  videoUrl: string
+  duration?: string
+  views: number
+  likes: number
+  favorites: number
+  shares: number
+  createdAt: string
+  updatedAt: string
+  userId: number
+  status: 'pending' | 'approved' | 'rejected'
+  user?: {
+    id: number
+    username: string
+    avatar?: string
+  }
+}
+
+interface UserProfile {
+  id: number
+  username: string
+  avatar?: string
+  bio?: string
+  followingCount: number
+  followersCount: number
+  likeCount: number
+}
+
+// 管理员相关API
+export const adminApi = {
+  // 获取所有用户
+  getAllUsers() {
+    return api.get('/admin/users')
+  },
+
+  // 创建用户
+  createUser(userData: any) {
+    return api.post('/admin/users', userData)
+  },
+
+  // 删除用户
+  deleteUser(userId: number) {
+    return api.delete(`/admin/users/${userId}`)
+  },
+
+  // 获取待审核视频
+  getPendingVideos() {
+    return api.get('/admin/videos/pending')
+  },
+
+  // 审核视频
+  reviewVideo(
+    videoId: number,
+    status: 'approved' | 'rejected',
+    reason?: string,
+  ) {
+    return api.post(`/admin/videos/${videoId}/review`, {
+      status,
+      reason,
+    })
+  },
+
+  // 获取所有视频
+  getAllVideos() {
+    return api.get('/videos')
+  },
+
+  // 删除视频
+  deleteVideo(videoId: number) {
+    return api.delete(`/admin/videos/${videoId}`)
+  },
+}
 
 // 用户相关API
 export const userApi = {
@@ -82,7 +178,7 @@ export const userApi = {
   },
 
   // 获取用户详细资料（含关注数、粉丝数等）
-  getUserProfile(userId: number) {
+  getUserProfile(userId: number): Promise<UserProfile> {
     return api.get(`/users/${userId}/profile`)
   },
 
@@ -117,12 +213,12 @@ export const userApi = {
   },
 
   // 获取用户发布的视频
-  getUserVideos(userId: number) {
+  getUserVideos(userId: number): Promise<VideoResponse[]> {
     return api.get(`/users/${userId}/videos`)
   },
 
   // 获取用户收藏的视频
-  getUserFavorites(userId: number) {
+  getUserFavorites(userId: number): Promise<VideoResponse[]> {
     return api.get(`/users/${userId}/favorites`)
   },
 
@@ -130,22 +226,51 @@ export const userApi = {
   getViewHistory(userId: number) {
     return api.get(`/users/${userId}/history`)
   },
+
+  // 获取用户观看视频的分类统计
+  getCategoryStats(userId: number) {
+    return api.get(`/users/${userId}/category-stats`)
+  },
+
+  // 标记消息为已读
+  markMessagesAsRead(senderId: number) {
+    return api.post(`/chat/messages/read/${senderId}`)
+  },
+
+  // 获取用户学习统计
+  getLearningStats(userId: number) {
+    return api.get(`/users/${userId}/learning-stats`)
+  },
+
+  // 获取用户观看时长统计
+  getWatchTimeStats(userId: number, period: 'day' | 'week' | 'month' | 'year') {
+    return api.get(`/users/${userId}/watch-time-stats`, {
+      params: { period },
+    })
+  },
+
+  // 获取用户每日学习记录
+  getDailyLearningRecords(userId: number, startDate: string, endDate: string) {
+    return api.get(`/users/${userId}/daily-learning`, {
+      params: { startDate, endDate },
+    })
+  },
 }
 
 // 视频相关API
 export const videoApi = {
   // 获取所有视频
-  getAllVideos() {
+  getAllVideos(): Promise<VideoResponse[]> {
     return api.get('/videos')
   },
 
   // 获取热门视频
-  getPopularVideos() {
+  getPopularVideos(): Promise<VideoResponse[]> {
     return api.get('/videos/popular')
   },
 
   // 获取最新视频
-  getRecentVideos() {
+  getRecentVideos(): Promise<VideoResponse[]> {
     return api.get('/videos/recent')
   },
 
@@ -161,18 +286,21 @@ export const videoApi = {
 
   // 搜索视频
   searchVideos(query: string, sort?: string, limit?: number) {
-    let url = `/videos/search?q=${encodeURIComponent(query)}`
-    if (sort) url += `&sort=${encodeURIComponent(sort)}`
-    if (limit && !isNaN(Number(limit))) url += `&limit=${limit}`
-    return api.get(url)
+    return api.get('/videos/search', {
+      params: {
+        q: query,
+        sort,
+        limit,
+      },
+    })
   },
 
   // 获取视频详情
-  getVideoDetail(id: number) {
+  getVideoDetail(id: number): Promise<VideoResponse> {
     return api.get(`/videos/${id}`)
   },
 
-  // 添加浏览量
+  // 添加观看记录
   addView(id: number) {
     return api.post(`/videos/${id}/view`)
   },
@@ -196,46 +324,244 @@ export const videoApi = {
   getVideoInteraction(id: number) {
     return api.get(`/videos/${id}/interaction`)
   },
-  
+
   // 创建视频
   createVideo(videoData: {
-    title: string;
-    description?: string;
-    cover: string;
-    videoUrl: string;
-    duration?: string;
-    isPremium?: boolean;
-    hasWisdomCourse?: boolean;
-    teacher?: string;
+    title: string
+    description?: string
+    cover: string
+    videoUrl: string
+    duration?: string
+    isPremium?: boolean
+    hasWisdomCourse?: boolean
+    teacher?: string
   }) {
-    console.log(videoData);
-    
     return api.post('/videos', videoData)
   },
-  
+
   // 更新视频信息
-  updateVideo(id: number, videoData: {
-    title?: string;
-    description?: string;
-    cover?: string;
-    videoUrl?: string;
-    duration?: string;
-    isPremium?: boolean;
-    hasWisdomCourse?: boolean;
-    teacher?: string;
-  }) {
+  updateVideo(
+    id: number,
+    videoData: {
+      title?: string
+      description?: string
+      cover?: string
+      videoUrl?: string
+      duration?: string
+      isPremium?: boolean
+      hasWisdomCourse?: boolean
+      teacher?: string
+    },
+  ) {
     return api.put(`/videos/${id}`, videoData)
   },
-  
+
   // 删除视频
   deleteVideo(id: number) {
     return api.delete(`/videos/${id}`)
-  }
+  },
+}
+
+// 聊天相关API
+export const chatApi = {
+  // 获取会话列表
+  getConversations(): Promise<ChatMessage[]> {
+    return api.get('/chat/conversations')
+  },
+
+  // 获取与指定用户的聊天历史
+  getMessageHistory(
+    userId: number,
+    page = 1,
+    limit = 20,
+  ): Promise<ChatResponse> {
+    return api.get(`/chat/messages/${userId}`, {
+      params: { page, limit },
+    })
+  },
+
+  // 发送消息
+  sendMessage(receiverId: number, content: string): Promise<ChatMessage> {
+    return api.post('/chat/messages', { receiverId, content })
+  },
+
+  // 获取未读消息数量
+  getUnreadCount(): Promise<number> {
+    return api.get('/chat/unread-count')
+  },
+
+  // 标记消息为已读
+  markAsRead(senderId: number) {
+    return api.post(`/chat/messages/read/${senderId}`)
+  },
+
+  // 获取最近的聊天用户列表
+  getRecentChats() {
+    return api.get('/chat/recent')
+  },
+
+  // 删除聊天记录
+  deleteMessages(userId: number) {
+    return api.delete(`/chat/messages/${userId}`)
+  },
+
+  // 获取与用户的未读消息数
+  getUnreadCountWithUser(userId: number) {
+    return api.get(`/chat/unread-count/${userId}`)
+  },
+}
+
+// 上传相关API
+export const uploadApi = {
+  // 上传封面图片
+  uploadCover: async (file: File, token: string): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`${API_BASE_URL}/uploads/cover`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error('上传封面失败')
+    }
+
+    const data = await response.json()
+    return data.url
+  },
+
+  // 上传头像
+  uploadAvatar: async (file: File, token: string): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch(`${API_BASE_URL}/uploads/avatar`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    })
+
+    if (!response.ok) {
+      throw new Error('上传头像失败')
+    }
+
+    const data = await response.json()
+    return data.url
+  },
+
+  // 上传视频文件
+  uploadVideo: async (
+    file: File,
+    token: string,
+    onProgress?: (percent: number) => void,
+  ): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+
+      if (onProgress) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            const percent = Math.round((event.loaded / event.total) * 100)
+            onProgress(percent)
+          }
+        }
+      }
+
+      xhr.open('POST', `${API_BASE_URL}/uploads/video`, true)
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const data = JSON.parse(xhr.responseText)
+          resolve(data.path)
+        } else {
+          reject(new Error('上传视频失败'))
+        }
+      }
+
+      xhr.onerror = () => {
+        reject(new Error('网络错误'))
+      }
+
+      xhr.send(formData)
+    })
+  },
+}
+
+// WebSocket服务
+export const socketService = {
+  socket: null as WebSocket | null,
+  messageHandlers: new Set<(message: any) => void>(),
+
+  init() {
+    if (this.socket?.readyState === WebSocket.OPEN) return
+
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    const wsUrl = `ws://localhost:3000/ws?token=${token}`
+    this.socket = new WebSocket(wsUrl)
+
+    this.socket.onmessage = (event) => {
+      const message = JSON.parse(event.data)
+      this.messageHandlers.forEach((handler) => handler(message))
+    }
+
+    this.socket.onclose = () => {
+      console.log('WebSocket连接已关闭')
+      // 可以在这里添加重连逻辑
+      setTimeout(() => this.init(), 3000)
+    }
+  },
+
+  onNewMessage(handler: (message: any) => void) {
+    this.messageHandlers.add(handler)
+    return () => {
+      this.messageHandlers.delete(handler)
+    }
+  },
+
+  markAsRead(userId: number) {
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(
+        JSON.stringify({
+          type: 'markAsRead',
+          data: { userId },
+        }),
+      )
+    }
+  },
+
+  sendMessage(message: any) {
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(
+        JSON.stringify({
+          type: 'message',
+          data: message,
+        }),
+      )
+    }
+  },
+
+  close() {
+    this.socket?.close()
+    this.socket = null
+    this.messageHandlers.clear()
+  },
 }
 
 // 评论相关API
 export const commentApi = {
-  // 获取视频评论
+  // 获取视频评论列表
   getVideoComments(videoId: number) {
     return api.get(`/comments/video/${videoId}`)
   },
@@ -258,139 +584,46 @@ export const commentApi = {
   likeComment(commentId: number) {
     return api.post(`/comments/${commentId}/like`)
   },
+
+  // 取消点赞评论
+  unlikeComment(commentId: number) {
+    return api.post(`/comments/${commentId}/unlike`)
+  },
+
+  // 获取评论的回复列表
+  getReplies(commentId: number) {
+    return api.get(`/comments/${commentId}/replies`)
+  },
+
+  // 获取用户发表的所有评论
+  getUserComments(userId: number) {
+    return api.get(`/comments/user/${userId}`)
+  },
+
+  // 获取评论详情
+  getCommentDetail(commentId: number) {
+    return api.get(`/comments/${commentId}`)
+  },
+
+  // 举报评论
+  reportComment(commentId: number, reason: string) {
+    return api.post(`/comments/${commentId}/report`, {
+      reason,
+    })
+  },
+
+  // 获取热门评论
+  getHotComments(videoId: number) {
+    return api.get(`/comments/video/${videoId}/hot`)
+  },
+
+  // 置顶评论（管理员或视频作者）
+  pinComment(commentId: number) {
+    return api.post(`/comments/${commentId}/pin`)
+  },
+
+  // 取消置顶评论
+  unpinComment(commentId: number) {
+    return api.post(`/comments/${commentId}/unpin`)
+  },
 }
-
-// 上传封面图片API
-export const uploadApi = {
-  // 上传封面图片
-  uploadCover: async (file: File, token: string): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/uploads/cover`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error('上传封面失败');
-      }
-
-      const data = await response.json();
-      return data.url; // 返回图片的存储路径
-    } catch (error) {
-      console.error('上传封面失败:', error);
-      throw error;
-    }
-  },
-
-  // 上传头像
-  uploadAvatar: async (file: File, token: string): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/uploads/avatar`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error('上传头像失败');
-      }
-
-      const data = await response.json();
-      return data.url; // 返回图片的存储路径
-    } catch (error) {
-      console.error('上传头像失败:', error);
-      throw error;
-    }
-  },
-
-  // 上传视频文件
-  uploadVideo: async (file: File, token: string, onProgress?: (percent: number) => void): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      // 使用XMLHttpRequest来支持上传进度
-      return new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        
-        // 监听上传进度
-        if (onProgress) {
-          xhr.upload.onprogress = (event) => {
-            if (event.lengthComputable) {
-              const percent = Math.round((event.loaded / event.total) * 100);
-              onProgress(percent);
-            }
-          };
-        }
-
-        xhr.open('POST', `${API_BASE_URL}/uploads/video`, true);
-        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-        
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const data = JSON.parse(xhr.responseText);
-            resolve(data.path);
-          } else {
-            reject(new Error('上传视频失败'));
-          }
-        };
-        
-        xhr.onerror = () => {
-          reject(new Error('网络错误'));
-        };
-        
-        xhr.send(formData);
-      });
-    } catch (error) {
-      console.error('上传视频失败:', error);
-      throw error;
-    }
-  }
-};
-
-export const chatApi = {
-  // 获取会话列表
-  getConversations: async () => {
-    const response = await api.get('/chat/conversations');
-    return response;
-  },
-
-  // 获取与指定用户的聊天历史
-  getMessageHistory: async (userId: number, page = 1, limit = 20) => {
-    const response = await api.get(`/chat/messages/${userId}`, {
-      params: { page, limit }
-    });
-    return response;
-  },
-
-  // 发送消息
-  sendMessage: async (receiverId: number, content: string) => {
-    const response = await api.post('/chat/messages', { receiverId, content });
-    return response;
-  },
-
-  // 获取未读消息数量
-  getUnreadCount: async () => {
-    const response = await api.get('/chat/unread-count');
-    return response;
-  },
-  
-  // 获取用户资料
-  getUserProfile: async (userId: number) => {
-    const response = await api.get(`/users/${userId}/profile`);
-    return response;
-  }
-};
-
-export default api
