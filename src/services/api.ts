@@ -8,6 +8,7 @@ const API_BASE_URL =
 const api = axios.create({
   baseURL: 'http://localhost:3000',
   timeout: 10000,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -163,8 +164,8 @@ export const adminApi = {
 // 用户相关API
 export const userApi = {
   // 登录
-  login(username: string, password: string) {
-    return api.post('/auth/login', { username, password })
+  login(username: string, password: string, captcha: string) {
+    return api.post('/auth/login', { username, password, captcha })
   },
 
   // 注册
@@ -293,6 +294,10 @@ export const videoApi = {
         limit,
       },
     })
+  },
+
+  getCaptcha() {
+    return api.get('/captcha')
   },
 
   // 获取视频详情
@@ -431,7 +436,7 @@ export const uploadApi = {
     }
 
     const data = await response.json()
-    return data.url
+    return data.url // 直接返回OSS的完整URL
   },
 
   // 上传头像
@@ -452,7 +457,7 @@ export const uploadApi = {
     }
 
     const data = await response.json()
-    return data.url
+    return data.url // 直接返回OSS的完整URL
   },
 
   // 上传视频文件
@@ -482,7 +487,7 @@ export const uploadApi = {
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
           const data = JSON.parse(xhr.responseText)
-          resolve(data.path)
+          resolve(data.path) // 返回OSS的完整URL
         } else {
           reject(new Error('上传视频失败'))
         }

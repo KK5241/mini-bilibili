@@ -380,6 +380,7 @@ const handleFileChange = async (event: Event) => {
   // 上传文件
   try {
     uploadedCoverPath.value = await uploadApi.uploadCover(file, userStore.token)
+    console.log('uploadedCoverPath.value', uploadedCoverPath.value);
     
     // 更新表单值
     formData.cover = uploadedCoverPath.value

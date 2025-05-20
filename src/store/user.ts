@@ -20,10 +20,10 @@ export const useUserStore = defineStore('user', {
   },
 
   actions: {
-    async login(username: string, password: string) {
+    async login(username: string, password: string, captcha: string) {
       try {
         this.loading = true
-        const response = await userApi.login(username, password)
+        const response = await userApi.login(username, password, captcha)
         this.setAuthData(response)
         ElMessage.success('登录成功')
         this.fetchUserAdditionalInfo()

@@ -39,10 +39,16 @@
             <el-table-column label="操作" width="200" fixed="right">
               <template #default="{ row }">
                 <el-button-group>
-                  <el-button type="primary" @click="handleReview(row, 'approved')">
+                  <el-button
+                    type="primary"
+                    @click="handleReview(row, 'approved')"
+                  >
                     通过
                   </el-button>
-                  <el-button type="danger" @click="handleReview(row, 'rejected')">
+                  <el-button
+                    type="danger"
+                    @click="handleReview(row, 'rejected')"
+                  >
                     拒绝
                   </el-button>
                 </el-button-group>
@@ -57,7 +63,9 @@
           <template #header>
             <div class="card-header">
               <span>所有视频</span>
-              <el-button type="primary" @click="refreshAllVideos">刷新</el-button>
+              <el-button type="primary" @click="refreshAllVideos"
+                >刷新</el-button
+              >
             </div>
           </template>
 
@@ -84,7 +92,9 @@
             </el-table-column>
             <el-table-column prop="status" label="状态" width="100">
               <template #default="{ row }">
-                <el-tag :type="getStatusType(row.reviewStatus)">{{ getStatusText(row.reviewStatus) }}</el-tag>
+                <el-tag :type="getStatusType(row.reviewStatus)">{{
+                  getStatusText(row.reviewStatus)
+                }}</el-tag>
               </template>
             </el-table-column>
             <el-table-column prop="createdAt" label="上传时间" width="180">
@@ -94,7 +104,11 @@
             </el-table-column>
             <el-table-column label="操作" width="100" fixed="right">
               <template #default="{ row }">
-                <el-button type="danger" @click="handleDelete(row)" :loading="row.deleting">
+                <el-button
+                  type="danger"
+                  @click="handleDelete(row)"
+                  :loading="row.deleting"
+                >
                   删除
                 </el-button>
               </template>
@@ -129,11 +143,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog
-      v-model="deleteDialogVisible"
-      title="删除视频"
-      width="400px"
-    >
+    <el-dialog v-model="deleteDialogVisible" title="删除视频" width="400px">
       <p>确定要删除这个视频吗？此操作不可恢复。</p>
       <template #footer>
         <span class="dialog-footer">
@@ -148,179 +158,184 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import axios from 'axios';
-import { adminApi } from '@/services/api';
+import { ref, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import axios from 'axios'
+import { adminApi } from '@/services/api'
 
 interface Video {
-  id: number;
-  title: string;
-  cover: string;
-  status: 'pending' | 'approved' | 'rejected';
+  id: number
+  title: string
+  cover: string
+  status: 'pending' | 'approved' | 'rejected'
   user?: {
-    id: number;
-    username: string;
-  };
-  createdAt: string;
-  deleting?: boolean;
+    id: number
+    username: string
+  }
+  createdAt: string
+  deleting?: boolean
 }
 
-const videos = ref<Video[]>([]);
-const loading = ref(false);
-const reviewDialogVisible = ref(false);
-const reviewType = ref<'approved' | 'rejected'>('approved');
-const currentVideo = ref<Video | null>(null);
-const submitting = ref(false);
+const videos = ref<Video[]>([])
+const loading = ref(false)
+const reviewDialogVisible = ref(false)
+const reviewType = ref<'approved' | 'rejected'>('approved')
+const currentVideo = ref<Video | null>(null)
+const submitting = ref(false)
 const reviewForm = ref({
   reason: '',
-});
+})
 
-const activeTab = ref('pending');
-const allVideos = ref<Video[]>([]);
-const loadingAll = ref(false);
-const deleteDialogVisible = ref(false);
-const deleting = ref(false);
+const activeTab = ref('pending')
+const allVideos = ref<Video[]>([])
+const loadingAll = ref(false)
+const deleteDialogVisible = ref(false)
+const deleting = ref(false)
 
 const fetchVideos = async () => {
-  loading.value = true;
-  
+  loading.value = true
+
   try {
-    const response = await adminApi.getPendingVideos();
+    const response = await adminApi.getPendingVideos()
+    console.log('1234', response)
+
     if (Array.isArray(response)) {
-      videos.value = response;
+      videos.value = response
     } else {
-      videos.value = [];
-      console.error('API返回的数据格式不正确:', response);
+      videos.value = []
+      console.error('API返回的数据格式不正确:', response)
     }
   } catch (error) {
-    console.error('获取视频列表失败:', error);
-    ElMessage.error('获取视频列表失败');
-    videos.value = [];
+    console.error('获取视频列表失败:', error)
+    ElMessage.error('获取视频列表失败')
+    videos.value = []
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
 const handleReview = (video: Video, type: 'approved' | 'rejected') => {
-  currentVideo.value = video;
-  reviewType.value = type;
-  reviewForm.value.reason = '';
-  reviewDialogVisible.value = true;
-};
+  currentVideo.value = video
+  reviewType.value = type
+  reviewForm.value.reason = ''
+  reviewDialogVisible.value = true
+}
 
 const submitReview = async () => {
-  if (!currentVideo.value) return;
+  if (!currentVideo.value) return
 
-  submitting.value = true;
+  submitting.value = true
   try {
-    await adminApi.reviewVideo(currentVideo.value.id,reviewType.value,reviewType.value === 'rejected' ? reviewForm.value.reason : undefined ) 
+    await adminApi.reviewVideo(
+      currentVideo.value.id,
+      reviewType.value,
+      reviewType.value === 'rejected' ? reviewForm.value.reason : undefined,
+    )
 
-    ElMessage.success('审核操作成功');
-    reviewDialogVisible.value = false;
-    fetchVideos();
+    ElMessage.success('审核操作成功')
+    reviewDialogVisible.value = false
+    fetchVideos()
   } catch (error) {
-    console.error('审核操作失败:', error);
-    ElMessage.error('审核操作失败');
+    console.error('审核操作失败:', error)
+    ElMessage.error('审核操作失败')
   } finally {
-    submitting.value = false;
+    submitting.value = false
   }
-};
+}
 
 const refreshList = () => {
-  fetchVideos();
-};
+  fetchVideos()
+}
 
 const fetchAllVideos = async () => {
-  loadingAll.value = true;
+  loadingAll.value = true
   try {
-    const response = await adminApi.getAllVideos();
+    const response = await adminApi.getAllVideos()
     if (Array.isArray(response)) {
-      allVideos.value = response;
-      console.log('a', allVideos.value);
-      
+      allVideos.value = response
+      console.log('a', allVideos.value)
     } else {
-      allVideos.value = [];
-      console.error('API返回的数据格式不正确:', response);
+      allVideos.value = []
+      console.error('API返回的数据格式不正确:', response)
     }
   } catch (error) {
-    console.error('获取视频列表失败:', error);
-    ElMessage.error('获取视频列表失败');
-    allVideos.value = [];
+    console.error('获取视频列表失败:', error)
+    ElMessage.error('获取视频列表失败')
+    allVideos.value = []
   } finally {
-    loadingAll.value = false;
+    loadingAll.value = false
   }
-};
+}
 
 const refreshAllVideos = () => {
-  fetchAllVideos();
-};
+  fetchAllVideos()
+}
 
 const getStatusType = (status: string) => {
   switch (status) {
     case 'pending':
-      return 'warning';
+      return 'warning'
     case 'approved':
-      return 'success';
+      return 'success'
     case 'rejected':
-      return 'danger';
+      return 'danger'
     default:
-      return 'info';
+      return 'info'
   }
-};
+}
 
 const getStatusText = (status: string) => {
   switch (status) {
     case 'pending':
-      return '待审核';
+      return '待审核'
     case 'approved':
-      return '已通过';
+      return '已通过'
     case 'rejected':
-      return '已拒绝';
+      return '已拒绝'
     default:
-      return '未知';
+      return '未知'
   }
-};
+}
 
 const handleDelete = (video: Video) => {
-  currentVideo.value = video;
-  deleteDialogVisible.value = true;
-};
+  currentVideo.value = video
+  deleteDialogVisible.value = true
+}
 
 const confirmDelete = async () => {
-  if (!currentVideo.value) return;
+  if (!currentVideo.value) return
 
-  deleting.value = true;
+  deleting.value = true
   try {
-    await adminApi.deleteVideo(currentVideo.value.id);
-    ElMessage.success('删除成功');
-    deleteDialogVisible.value = false;
+    await adminApi.deleteVideo(currentVideo.value.id)
+    ElMessage.success('删除成功')
+    deleteDialogVisible.value = false
     if (activeTab.value === 'pending') {
-      fetchVideos();
+      fetchVideos()
     } else {
-      fetchAllVideos();
+      fetchAllVideos()
     }
   } catch (error) {
-    console.error('删除失败:', error);
-    ElMessage.error('删除失败');
+    console.error('删除失败:', error)
+    ElMessage.error('删除失败')
   } finally {
-    deleting.value = false;
+    deleting.value = false
   }
-};
+}
 
 const formatDate = (dateString: string) => {
-  if (!dateString) return '';
+  if (!dateString) return ''
   try {
-    return new Date(dateString).toLocaleString();
+    return new Date(dateString).toLocaleString()
   } catch (e) {
-    return dateString;
+    return dateString
   }
-};
+}
 
 onMounted(() => {
-  fetchVideos();
-  fetchAllVideos();
-});
+  fetchVideos()
+  fetchAllVideos()
+})
 </script>
 
 <style scoped>
